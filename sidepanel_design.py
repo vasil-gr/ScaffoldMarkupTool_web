@@ -1,4 +1,5 @@
 import streamlit as st
+import base64
 
 st.set_page_config(
     page_title="ScaffoldMarkupTool",
@@ -47,5 +48,44 @@ if st.session_state.sidebar_state == "expanded":
         with col3:
             st.button("Next", on_click=next_step, disabled=((st.session_state.step == 1 and st.session_state.original_data is None) or (st.session_state.step == 3)))
 
+st.markdown(
+    """
+    <style>
+    .block-container {
+        padding: 40px !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 if st.session_state.step == 1:
     st.markdown("## Scaffold Markup Tool")
+    st.write("Приложение ScaffoldMarkupTool предназначено для разметки микрофотографий скаффолдов.")
+
+elif st.session_state.step == 2:
+    if st.session_state.original_data is not None:
+        # Конвертация в base64
+        def get_image_base64(image_file):
+            return base64.b64encode(image_file.getvalue()).decode()
+
+        encoded_image = get_image_base64(st.session_state.original_data)
+
+        # Контейнер с прокруткой
+        st.markdown(
+            f"""
+            <style>
+            .image-container {{
+                width: calc(100vw - 20px);
+                height: calc(100vh - 20px);
+                padding: 20px;
+                overflow: auto;
+                border: 1px solid #ddd;
+            }}
+            </style>
+            <div class="image-container">
+                <img src="data:image/png;base64,{encoded_image}" />
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
