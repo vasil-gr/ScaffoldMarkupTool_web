@@ -1,124 +1,170 @@
 import streamlit as st
-import streamlit as st
-from PIL import Image, ImageDraw
-from streamlit_image_coordinates import streamlit_image_coordinates
+from streamlit_drawable_canvas import st_canvas
+import json
 
-# --- Constants ---
-IMAGE_PATH = "20x_20_0070.jpg"
+# Конфигурация
+BASE_WIDTH, BASE_HEIGHT = 600, 400
+INITIAL_SCALE = 1.0
+INITIAL_POINT_SIZE = 10
+INITIAL_COLOR = "#FF0000"
 
-# --- Page setup ---
-st.set_page_config(layout="wide")
+# Инициализация переменных
+if 'scale' not in st.session_state:
+    st.session_state.scale = INITIAL_SCALE
+    st.session_state.base_points = []  # словари: {'x', 'y', 'size', 'color'}
+    st.session_state.canvas_data = None
+    st.session_state.mode = "draw"
+    st.session_state.current_point_size = INITIAL_POINT_SIZE
+    st.session_state.current_point_color = INITIAL_COLOR
+    
 
-# --- Initialize session state ---
-if "mode" not in st.session_state:
-    st.session_state.mode = 1  # 1-add points, 2-remove points
+# Функции преобразования координат
+def scale_value(value, scale):
+    """Масштабирование значения"""
+    return value * scale
 
-if "scale_ratio" not in st.session_state:
-    st.session_state.scale_ratio = 1
+def get_scaled_points():
+    """Возвращает масштабированные точки с их параметрами"""
+    return [
+        {
+            'x': point['x'] * st.session_state.scale,
+            'y': point['y'] * st.session_state.scale,
+            'size': point['size'] * st.session_state.scale,
+            'color': f"{point['color']}B3"  # фиксированная прозрачность 0.7 (B3 в hex)
+        }
+        for point in st.session_state.base_points
+    ]
 
-if "points" not in st.session_state:
-    st.session_state.points = []  # Stores (x,y) coordinates
+# Генерация данных для холста
+def generate_canvas_data():
+    scaled_points = get_scaled_points()
+    is_edit_mode = (st.session_state.mode == "edit")
+    return {
+        "version": "4.6.0",
+        "objects": [
+            {
+                "type": "circle",
+                "left": point['x'] - point['size'],
+                "top": point['y'] - point['size'],
+                "radius": point['size'],
+                "fill": point['color'],
+                "selectable": is_edit_mode,
+                "hoverCursor": "move" if is_edit_mode else "default",
+                "hasControls": is_edit_mode,
+                "hasBorders": is_edit_mode,
+                "lockRotation": True,
+                "lockScalingX": True,
+                "lockScalingY": True,
+                "originX": "left",
+                "originY": "top"
+            }
+            for point in scaled_points
+        ]
+    }
 
-if "last_handled_coords" not in st.session_state:
-    st.session_state.last_handled_coords = None  # Prevents duplicate clicks
+# Интерфейс
+st.title("Масштабируемый холст с точками")
 
-if "radius" not in st.session_state:
-    st.session_state.radius = 100  # Delete radius in pixels
+# Панель управления
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    new_scale = st.slider("Масштаб", 0.1, 3.0, st.session_state.scale, 0.1)
+    if new_scale != st.session_state.scale:
+        st.session_state.scale = new_scale
+        st.session_state.canvas_data = generate_canvas_data()
+        
+with col2:
+    mode_radio = st.radio(
+        "Режим",
+        ("Добавление точек", "Редактирование точек"),
+        index=0 if st.session_state.mode == "draw" else 1
+    )
+    new_mode = "draw" if mode_radio == "Добавление точек" else "edit"
+    if new_mode != st.session_state.mode:
+        st.session_state.mode = new_mode
+        st.session_state.canvas_data = generate_canvas_data()
+        
+with col3:
+    if st.button("Добавить точку (100,100)"):
+        st.session_state.base_points.append({
+            'x': 100,
+            'y': 100,
+            'size': st.session_state.current_point_size,
+            'color': st.session_state.current_point_color
+        })
+        st.session_state.canvas_data = generate_canvas_data()
+    
+    if st.button("Очистить все точки", disabled=not st.session_state.base_points):
+        st.session_state.base_points = []
+        st.session_state.canvas_data = {"version": "4.6.0", "objects": []}
 
-# --- Draw points on scaled image ---
-def draw_points_on_image(image, points, scale_ratio, point_radius=10, color=(255, 0, 0)):
-    """Scale image and draw points on it"""
-    img_width, img_height = image.size
-    new_size = (int(img_width * scale_ratio), int(img_height * scale_ratio))
-    image_resized = image.resize(new_size).convert("RGB")
+with col4:
+    # Настройки для новых точек (не влияют на существующие)
+    st.session_state.current_point_size = st.slider(
+        "Размер точки", 
+        min_value=1, 
+        max_value=20, 
+        value=st.session_state.current_point_size,
+        key="size_slider"
+    )
+    
+    st.session_state.current_point_color = st.color_picker(
+        "Цвет точки", 
+        st.session_state.current_point_color,
+        key="color_picker"
+    )
 
-    draw = ImageDraw.Draw(image_resized)
-    for x, y in points:
-        x_scaled = int(x * scale_ratio)
-        y_scaled = int(y * scale_ratio)
-        r = int(point_radius * scale_ratio)
-        draw.ellipse([(x_scaled - r, y_scaled - r), (x_scaled + r, y_scaled + r)], fill=color)
-
-    return image_resized
-
-# --- UI Elements ---
-st.radio("Select mode:", [1, 2], horizontal=True)  # Temporary spacer
-
-scale_percent = st.slider(
-    "Image scale (%)",
-    min_value=10,
-    max_value=300,
-    value=int(st.session_state.scale_ratio*100),
-    step=10,
-    key="scale_slider"
+# Холст
+canvas_result = st_canvas(
+    fill_color=st.session_state.current_point_color + "B3",  # прозрачность
+    stroke_width=0,
+    stroke_color=st.session_state.current_point_color + "B3",
+    background_color="#fff",
+    height=BASE_HEIGHT,
+    width=BASE_WIDTH,
+    drawing_mode="point" if st.session_state.mode == "draw" else "transform",
+    point_display_radius=st.session_state.current_point_size * st.session_state.scale if st.session_state.mode == "draw" else 0,
+    initial_drawing=st.session_state.canvas_data,
+    update_streamlit=True,
+    key=f"canvas_{st.session_state.mode}_{st.session_state.scale}"
 )
-st.session_state.scale_ratio = scale_percent / 100
 
-st.session_state.mode = st.radio(
-    "Select mode:", 
-    [1, 2], 
-    horizontal=True, 
-    format_func=lambda x: "Add" if x == 1 else "Remove"
-)
-
-# --- Process image ---
-image = Image.open(IMAGE_PATH)
-img_width, img_height = image.size
-resized_image = draw_points_on_image(image, st.session_state.points, st.session_state.scale_ratio)
-resized_img_width, resized_img_height = resized_image.size
-
-# --- CSS for responsive iframe ---
-st.markdown(f"""
-<style>
-html, body, [data-testid="stApp"], .main, .block-container {{
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    max-width: none !important;
-    overflow-x: auto !important;
-    overflow-y: auto !important;
-}}
-iframe {{
-    width: {resized_img_width}px !important;
-    height: {resized_img_height}px !important;
-    display: block;
-    border: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}}
-</style>
-""", unsafe_allow_html=True)
-
-# --- Handle click coordinates ---
-coords = streamlit_image_coordinates(resized_image, key="click_img_with_scroll")
-
-if coords and coords != st.session_state.last_handled_coords:
-    st.session_state.last_handled_coords = coords
-    x_orig = int(coords["x"] / st.session_state.scale_ratio)
-    y_orig = int(coords["y"] / st.session_state.scale_ratio)
-
-    # Add mode
-    if st.session_state.mode == 1:
-        st.session_state.points.append((x_orig, y_orig))
+# Обработка изменений на холсте
+if canvas_result.json_data is not None:
+    new_objects = canvas_result.json_data.get("objects", [])
+    
+    new_base_points = []
+    for obj in new_objects:
+        if obj["type"] == "circle":
+            # Центр точки с учетом originY
+            center_x = obj["left"] + obj["radius"]
+            if obj.get("originY") == "center":
+                center_y = obj["top"]  # Уже центр
+            else:
+                center_y = obj["top"] + obj["radius"]
+            
+            # Обратное масштабирование координат и размера
+            base_x = center_x / st.session_state.scale
+            base_y = center_y / st.session_state.scale
+            base_size = obj["radius"] / st.session_state.scale
+            
+            # Цвет без прозрачности
+            color = obj["fill"][:7] if obj["fill"].startswith('#') else "#FF0000"
+            
+            new_base_points.append({
+                'x': base_x,
+                'y': base_y,
+                'size': base_size,
+                'color': color
+            })
+    
+    if new_base_points != st.session_state.base_points:
+        st.session_state.base_points = new_base_points
         st.rerun()
-    # Remove mode
-    elif st.session_state.mode == 2:
-        radius = int(st.session_state.radius)
-        if st.session_state.points:
-            nearest_point = None
-            nearest_dist_sq = radius ** 2 + 1
-            for x, y in st.session_state.points:
-                dist_sq = (x - x_orig) ** 2 + (y - y_orig) ** 2
-                if dist_sq <= radius ** 2 and dist_sq < nearest_dist_sq:
-                    nearest_dist_sq = dist_sq
-                    nearest_point = (x, y)
 
-            if nearest_point:
-                st.session_state.points.remove(nearest_point)
-                st.rerun()
-
-# --- Display points list ---
-st.write(f"📍 Total points: {len(st.session_state.points)}")
-for i, (x, y) in enumerate(st.session_state.points, 1):
-    st.write(f"{i}. ({x}, {y})")
+# Отображение информации
+st.subheader("Текущее состояние")
+st.write(f"Масштаб: {st.session_state.scale}")
+st.write("Текущий размер точки:", st.session_state.current_point_size)
+st.write("Текущий цвет точки:", st.session_state.current_point_color)
+st.write("Базовые точки:", st.session_state.base_points)
