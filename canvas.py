@@ -1,17 +1,90 @@
 import streamlit as st
 from streamlit_drawable_canvas import st_canvas
-import json
+from PIL import Image
+import math
+
+
+# Настройки страницы и адаптивный стиль
+st.set_page_config(layout="wide")
+
+image = Image.open("20x_20_0070.jpg")
+original_width, original_height = image.size
+
+
+
+# Параметры безопасного масштаба
+DISPLAY_WIDTH = 1500  # Оптимальная ширина для начального отображения
+MAX_WIDTH = 2500      # Максимальная ширина при увеличении
+MIN_WIDTH = 300       # Минимальная ширина при уменьшении
+STEP = 0.05           # Шаг изменения масштаба
+
+# Функция для расчета безопасного масштаба
+def calculate_safe_scale(original_width):
+    # Стартовый масштаб
+    if original_width <= DISPLAY_WIDTH:
+        initial_scale = 1.0
+    else:
+        scale_factor = DISPLAY_WIDTH / original_width
+        initial_scale = math.floor(scale_factor / STEP) * STEP
+        initial_scale = round(initial_scale, 2)
+    
+    # Минимальный масштаб
+    min_scale_raw = MIN_WIDTH / original_width
+    min_scale = math.ceil(min_scale_raw / STEP) * STEP
+    min_scale = max(0.1, round(min_scale, 2))
+    
+    # Максимальный масштаб
+    max_scale_raw = MAX_WIDTH / original_width
+    max_scale_rounded_up = math.ceil(max_scale_raw / STEP) * STEP
+    if (max_scale_rounded_up * original_width) <= MAX_WIDTH:
+        max_scale = max_scale_rounded_up
+    else:
+        max_scale = math.floor(max_scale_raw / STEP) * STEP
+    
+    max_scale = min(3.0, round(max_scale, 2))
+    
+    # initial_scale находится в границах
+    initial_scale = max(min(initial_scale, max_scale), min_scale)
+    
+    return initial_scale, min_scale, max_scale
+
+initial_scale, min_scale, max_scale = calculate_safe_scale(original_width)
+
+
+
+st.markdown(f"""
+<style>
+html, body, [data-testid="stApp"], .main, .block-container {{
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+}}
+iframe {{
+    width: {MAX_WIDTH}px !important;
+    display: block;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}}
+</style>
+""", unsafe_allow_html=True)
+
+
+
 
 # Конфигурация
-BASE_WIDTH, BASE_HEIGHT = 600, 400
-INITIAL_SCALE = 1.0
+INITIAL_SCALE = initial_scale
 INITIAL_POINT_SIZE = 10
 INITIAL_COLOR = "#FF0000"
 
 # Инициализация переменных
 if 'scale' not in st.session_state:
     st.session_state.scale = INITIAL_SCALE
-    st.session_state.base_points = []  # словари: {'x', 'y', 'size', 'color'}
+    st.session_state.base_points = []
     st.session_state.canvas_data = None
     st.session_state.mode = "draw"
     st.session_state.current_point_size = INITIAL_POINT_SIZE
@@ -30,7 +103,7 @@ def get_scaled_points():
             'x': point['x'] * st.session_state.scale,
             'y': point['y'] * st.session_state.scale,
             'size': point['size'] * st.session_state.scale,
-            'color': f"{point['color']}B3"  # фиксированная прозрачность 0.7 (B3 в hex)
+            'color': f"{point['color']}B3"
         }
         for point in st.session_state.base_points
     ]
@@ -68,7 +141,7 @@ st.title("Масштабируемый холст с точками")
 # Панель управления
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    new_scale = st.slider("Масштаб", 0.1, 3.0, st.session_state.scale, 0.1)
+    new_scale = st.slider("Масштаб", min_scale, max_scale, st.session_state.scale, STEP)
     if new_scale != st.session_state.scale:
         st.session_state.scale = new_scale
         st.session_state.canvas_data = generate_canvas_data()
@@ -114,19 +187,24 @@ with col4:
         key="color_picker"
     )
 
+# Масштабирование изображения
+scaled_width = int(original_width * new_scale)
+scaled_height = int(original_height * new_scale)
+
 # Холст
 canvas_result = st_canvas(
-    fill_color=st.session_state.current_point_color + "B3",  # прозрачность
+    fill_color=st.session_state.current_point_color + "B3",
     stroke_width=0,
     stroke_color=st.session_state.current_point_color + "B3",
-    background_color="#fff",
-    height=BASE_HEIGHT,
-    width=BASE_WIDTH,
+    background_image=image,
+    width=scaled_width,
+    height=scaled_height,
     drawing_mode="point" if st.session_state.mode == "draw" else "transform",
     point_display_radius=st.session_state.current_point_size * st.session_state.scale if st.session_state.mode == "draw" else 0,
     initial_drawing=st.session_state.canvas_data,
     update_streamlit=True,
-    key=f"canvas_{st.session_state.mode}_{st.session_state.scale}"
+    key=f"canvas_{st.session_state.mode}_{st.session_state.scale}",
+    display_toolbar=False
 )
 
 # Обработка изменений на холсте
@@ -136,19 +214,16 @@ if canvas_result.json_data is not None:
     new_base_points = []
     for obj in new_objects:
         if obj["type"] == "circle":
-            # Центр точки с учетом originY
             center_x = obj["left"] + obj["radius"]
             if obj.get("originY") == "center":
-                center_y = obj["top"]  # Уже центр
+                center_y = obj["top"]
             else:
                 center_y = obj["top"] + obj["radius"]
-            
-            # Обратное масштабирование координат и размера
+
             base_x = center_x / st.session_state.scale
             base_y = center_y / st.session_state.scale
             base_size = obj["radius"] / st.session_state.scale
-            
-            # Цвет без прозрачности
+
             color = obj["fill"][:7] if obj["fill"].startswith('#') else "#FF0000"
             
             new_base_points.append({
