@@ -15,13 +15,12 @@ st.set_page_config(layout="wide")
 
 if 'original_img' not in st.session_state:
     st.session_state.original_img = None
-    st.session_state.name_img = None
+    st.session_state.image_name = None
 
 
-st.session_state.name_img = "20x_20_0070.jpg"
-st.session_state.name_img = os.path.splitext(st.session_state.name_img)[0] # убираем расширение
+st.session_state.image_name = "20x_20_0070.jpg"
+st.session_state.image_name = os.path.splitext(st.session_state.image_name)[0] # убираем расширение
 st.session_state.original_img = Image.open("20x_20_0070.jpg")
-original_width, original_height = st.session_state.original_img.size
 
 
 
@@ -31,33 +30,45 @@ MAX_WIDTH = 2500
 MIN_WIDTH = 300
 STEP = 0.05
 
+if 'display_width' not in st.session_state:
+    st.session_state.display_width = DISPLAY_WIDTH
+    st.session_state.max_width = MAX_WIDTH
+    st.session_state.min_width = MIN_WIDTH
+    st.session_state.scale_step = STEP
+
+
 # Функция для расчета безопасного масштаба
 def calculate_safe_scale(original_width):
-    if original_width <= DISPLAY_WIDTH:
+
+    if original_width <= st.session_state.display_width:
         initial_scale = 1.0
     else:
-        scale_factor = DISPLAY_WIDTH / original_width
-        initial_scale = math.floor(scale_factor / STEP) * STEP
+        scale_factor = st.session_state.display_width / original_width
+        initial_scale = math.floor(scale_factor / st.session_state.scale_step) * st.session_state.scale_step
         initial_scale = round(initial_scale, 2)
-    
-    min_scale_raw = MIN_WIDTH / original_width
-    min_scale = math.ceil(min_scale_raw / STEP) * STEP
+
+    min_scale_raw = st.session_state.min_width / original_width
+    min_scale = math.ceil(min_scale_raw / st.session_state.scale_step) * st.session_state.scale_step
     min_scale = max(0.1, round(min_scale, 2))
     
-    max_scale_raw = MAX_WIDTH / original_width
-    max_scale_rounded_up = math.ceil(max_scale_raw / STEP) * STEP
-    if (max_scale_rounded_up * original_width) <= MAX_WIDTH:
+    max_scale_raw = st.session_state.max_width / original_width
+    max_scale_rounded_up = math.ceil(max_scale_raw / st.session_state.scale_step) * st.session_state.scale_step
+
+    if (max_scale_rounded_up * original_width) <= st.session_state.max_width:
         max_scale = max_scale_rounded_up
     else:
-        max_scale = math.floor(max_scale_raw / STEP) * STEP
+        max_scale = math.floor(max_scale_raw / st.session_state.scale_step) * st.session_state.scale_step
     
     max_scale = min(3.0, round(max_scale, 2))
+    
     initial_scale = max(min(initial_scale, max_scale), min_scale)
     
     return initial_scale, min_scale, max_scale
 
-initial_scale, min_scale, max_scale = calculate_safe_scale(original_width)
 
+# Счётчик перерисовок (при нажатии кнопки - стереть все точки)
+if 'redraw_id' not in st.session_state:
+    st.session_state.redraw_id = 0
 
 
 st.markdown(f"""
@@ -72,7 +83,7 @@ html, body, [data-testid="stApp"], .main, .block-container {{
     overflow-y: auto !important;
 }}
 iframe {{
-    width: {MAX_WIDTH}px !important;
+    width: {st.session_state.max_width}px !important;
     display: block;
     border: none !important;
     margin: 0 !important;
@@ -82,22 +93,32 @@ iframe {{
 """, unsafe_allow_html=True)
 
 
-
+# Инициализация начального масштаба и пределов слайдера
+if 'scale' not in st.session_state:
+    initial_scale, min_scale, max_scale = calculate_safe_scale(st.session_state.original_img.size[0])
+    st.session_state.scale = initial_scale
+    st.session_state.initial_scale = initial_scale # понадобится для сброса масштаба
+    st.session_state.min_scale = min_scale
+    st.session_state.max_scale = max_scale
 
 # Конфигурация
-INITIAL_SCALE = initial_scale
 INITIAL_POINT_SIZE = 10
 INITIAL_COLOR = "#FF0000"
 
 # Инициализация переменных
-if 'scale' not in st.session_state:
-    st.session_state.scale = INITIAL_SCALE
+if 'base_points' not in st.session_state:
     st.session_state.base_points = []
     st.session_state.canvas_data = None
     st.session_state.mode = "draw"
     st.session_state.current_point_size = INITIAL_POINT_SIZE
     st.session_state.current_point_color = INITIAL_COLOR
 
+# Инициализация download_option - вариант скачивания на втором шаге
+if 'download_option' not in st.session_state:
+    st.session_state.download_option = None
+    st.session_state.download_option_ind = None
+    st.session_state.data_ready = False
+    st.session_state.download_data = None
 
 
 # Функции для сохранения
@@ -131,7 +152,7 @@ def create_marked_image():
 # Функция для создания разметки на прозрачном фоне
 def create_markup_only():
     """Создает изображение с точками на прозрачном фоне"""
-    transparent_img = Image.new('RGBA', (original_width, original_height), (0, 0, 0, 0)) # прозрачный фон (режим 'RGBA')
+    transparent_img = Image.new('RGBA', (st.session_state.original_img.size[0], st.session_state.original_img.size[1]), (0, 0, 0, 0))
     return add_dots_to_image(transparent_img)
 
 
@@ -139,10 +160,10 @@ def create_markup_only():
 def save_points():
     """Создаёт JSON-данные с информацией о точках"""
     points_data = {
-        "image_name": st.session_state.name_img,
+        "image_name": st.session_state.image_name,
         "image_size": {
-            "width": original_width,
-            "height": original_height
+            "width": st.session_state.original_img.size[0],
+            "height": st.session_state.original_img.size[1]
         },
         "points": st.session_state.base_points,
         "point_count": len(st.session_state.base_points),
@@ -173,11 +194,11 @@ def save_project():
         img_byte_arr = io.BytesIO()
         st.session_state.original_img.save(img_byte_arr, format='PNG')
         img_byte_arr.seek(0)
-        zipf.writestr(f"{st.session_state.name_img}.png", img_byte_arr.getvalue())
+        zipf.writestr(f"{st.session_state.image_name}.png", img_byte_arr.getvalue())
         
         # 2. Добавляем JSON с точками
         json_data = save_points()
-        zipf.writestr(f"{st.session_state.name_img}_points.json", json_data.getvalue())
+        zipf.writestr(f"{st.session_state.image_name}_points.json", json_data.getvalue())
     
     zip_buffer.seek(0)
     return zip_buffer
@@ -234,16 +255,18 @@ def generate_canvas_data():
 # Интерфейс
 st.title("Масштабируемый холст с точками")
 
+generate_canvas_data()
+
 # Панель управления
 col1, col2, col3, col4, col5 = st.columns(5)
 with col1:
-    new_scale = st.slider("Масштаб", min_scale, max_scale, st.session_state.scale, STEP)
+    new_scale = st.slider("Масштаб", st.session_state.min_scale, st.session_state.max_scale, st.session_state.scale, st.session_state.scale_step)
     if new_scale != st.session_state.scale:
         st.session_state.scale = new_scale
         st.session_state.canvas_data = generate_canvas_data()
     
     if st.button("Скинуть масштаб"):
-        new_scale = INITIAL_SCALE
+        new_scale = st.session_state.initial_scale
         if new_scale != st.session_state.scale:
             st.session_state.scale = new_scale
             st.session_state.canvas_data = generate_canvas_data()
@@ -271,8 +294,10 @@ with col3:
         st.session_state.canvas_data = generate_canvas_data()
     
     if st.button("Очистить все точки", disabled=not st.session_state.base_points):
-        st.session_state.base_points = []
+        st.session_state.base_points.clear()
         st.session_state.canvas_data = {"version": "4.6.0", "objects": []}
+        st.session_state.redraw_id += 1
+        
 
 with col4:
     # Настройки для новых точек (не влияют на существующие)
@@ -291,41 +316,80 @@ with col4:
     )
 
 with col5:
-    # Кнопки скачивания результата
-    st.download_button(
-        label="Download marked image (png)",
-        data=create_marked_image(),
-        file_name=f"{st.session_state.name_img}_img+mark.png",
-        mime="image/png",
-        key="download_marked_image"
-    )
+    DOWNLOAD_CHOICES = ["Marked image (png)", "Markup only (png)", "Points data (json)", "Full Project (ZIP)"]
     
-    st.download_button(
-        label="Download markup only (png)",
-        data=create_markup_only(),
-        file_name=f"{st.session_state.name_img}_mark.png",
-        mime="image/png",
-        key="download_markup_only"
+    # Выпадающий список
+    selected_option = st.selectbox(
+        "Select download option:",
+        options=DOWNLOAD_CHOICES,
+        index=st.session_state.download_option_ind,
+        key='download_option_selector'
     )
-    st.download_button(
-        label="Download points data (json)",
-        data=save_points(),
-        file_name=f"{os.path.splitext(st.session_state.name_img)[0]}_points.json",
-        mime="application/json",
-        key="download_points_json"
-    )
-    st.download_button(
-        label="Download Full Project (ZIP)",
-        data=save_project(),
-        file_name=f"{os.path.splitext(st.session_state.name_img)[0]}_project.zip",
-        mime="application/zip",
-        help="Скачать ZIP-архив с изображением и данными о точках"
-    )
+
+    # Обновляем состояние при изменении выбора
+    if selected_option != st.session_state.download_option:
+        st.session_state.download_option = selected_option
+        st.session_state.download_option_ind = DOWNLOAD_CHOICES.index(selected_option) if selected_option else None
+        st.session_state.data_ready = False
+        st.session_state.download_data = None
+
+    # Конфигурация для каждого типа данных
+    download_config = {
+        "Marked image (png)": {
+            "func": create_marked_image,
+            "file_name": f"{st.session_state.image_name}_img+mark.png",
+            "mime": "image/png"
+        },
+        "Markup only (png)": {
+            "func": create_markup_only,
+            "file_name": f"{st.session_state.image_name}_mark.png",
+            "mime": "image/png"
+        },
+        "Points data (json)": {
+            "func": save_points,
+            "file_name": f"{os.path.splitext(st.session_state.image_name)[0]}_points.json",
+            "mime": "application/json"
+        },
+        "Full Project (ZIP)": {
+            "func": save_project,
+            "file_name": f"{os.path.splitext(st.session_state.image_name)[0]}_project.zip",
+            "mime": "application/zip"
+        }
+    }
+
+    # Кнопка "Загрузить"
+    if st.session_state.download_option and not st.session_state.data_ready:
+        if st.button("Загрузить", key="load_button"):
+            config = download_config[st.session_state.download_option]
+            st.session_state.download_data = {
+                "data": config["func"](),
+                "file_name": config["file_name"],
+                "mime": config["mime"]
+            }
+            st.session_state.data_ready = True
+            st.rerun()
+
+    # Кнопка "Скачать"
+    if st.session_state.data_ready:
+        data_info = st.session_state.download_data
+        if st.download_button(
+            label="Скачать",
+            data=data_info["data"],
+            file_name=data_info["file_name"],
+            mime=data_info["mime"],
+            key='download_button'
+        ):
+            # Сброс состояния после скачивания
+            st.session_state.download_option = None
+            st.session_state.download_option_ind = None
+            st.session_state.data_ready = False
+            st.session_state.download_data = None
+            st.rerun()
 
 
 # Масштабирование изображения
-scaled_width = int(original_width * new_scale)
-scaled_height = int(original_height * new_scale)
+scaled_width = int(st.session_state.original_img.size[0] * st.session_state.scale)
+scaled_height = int(st.session_state.original_img.size[1] * st.session_state.scale)
 
 # Холст
 canvas_result = st_canvas(
@@ -339,7 +403,7 @@ canvas_result = st_canvas(
     point_display_radius=st.session_state.current_point_size * st.session_state.scale if st.session_state.mode == "draw" else 0,
     initial_drawing=st.session_state.canvas_data,
     update_streamlit=True,
-    key=f"canvas_{st.session_state.mode}_{st.session_state.scale}",
+    key=f"canvas_{st.session_state.mode}_{st.session_state.scale}_{st.session_state.redraw_id}",
     display_toolbar=False
 )
 
