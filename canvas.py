@@ -71,6 +71,7 @@ if 'redraw_id' not in st.session_state:
     st.session_state.redraw_id = 0
 
 
+# Делаем главное окно без границ и ограничений, если контент внутри вылазит за границы экрана по ширине или высоте, то появляются полосы прокрутки
 st.markdown(f"""
 <style>
 html, body, [data-testid="stApp"], .main, .block-container {{
@@ -82,15 +83,23 @@ html, body, [data-testid="stApp"], .main, .block-container {{
     overflow-x: auto !important;
     overflow-y: auto !important;
 }}
-iframe {{
-    width: {st.session_state.max_width}px !important;
-    display: block;
-    border: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}}
 </style>
 """, unsafe_allow_html=True)
+
+# данная функция динамически адаптирвует размер холста под размер изображения
+# так как холст - самый широкий объект в главном окне, то он и регулирует полосу прокрутки
+def setup_config_frame(width):
+    st.markdown(f"""
+    <style>
+    iframe {{
+        width: {width}px !important;
+        display: block;
+        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
 
 
 # Инициализация начального масштаба и пределов слайдера
@@ -100,6 +109,9 @@ if 'scale' not in st.session_state:
     st.session_state.initial_scale = initial_scale # понадобится для сброса масштаба
     st.session_state.min_scale = min_scale
     st.session_state.max_scale = max_scale
+
+# динамически адаптирвуем размер холста под размер изображения (в зависимости от его масштаба)
+setup_config_frame(st.session_state.scale * st.session_state.original_img.size[0])
 
 # Конфигурация
 INITIAL_POINT_SIZE = 10
@@ -176,6 +188,7 @@ def save_points():
         "notes": None
     }
     
+    # Конвертируем в JSON строку
     json_str = json.dumps(points_data, indent=4)
 
     json_bytes = io.BytesIO(json_str.encode('utf-8'))
