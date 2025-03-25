@@ -25,6 +25,9 @@ if "sidebar_state" not in st.session_state:
 if "original_img" not in st.session_state:
     st.session_state.original_img = None
 
+if "image_name" not in st.session_state:
+    st.session_state.image_name = None
+
 if "base_points" not in st.session_state:
     st.session_state.base_points = None
 
@@ -42,7 +45,7 @@ def toggle_sidebar():
 
 def next_step():
     if (st.session_state.step == 1 and st.session_state.original_img is None) or st.session_state.step == 3:
-        return
+        return  
     else:
         st.session_state.step += 1
 
@@ -57,6 +60,7 @@ def restart():
 
 if st.session_state.sidebar_state == "expanded":
     with st.sidebar:
+
         if st.session_state.step == 1:
             st.markdown("""
             <h3 style='font-size: 18px; margin-bottom: 15px;'>
@@ -119,20 +123,22 @@ if st.session_state.sidebar_state == "expanded":
             if uploaded_file is not None:
                 if uploaded_file.type == "application/zip" or uploaded_file.name.endswith('.zip'):
                     try:
-                        if validate_zip_contents(uploaded_file):
-                            img, img_name = extract_image_from_zip(uploaded_file)
+                        if validate_zip_contents(uploaded_file): 
+                            img, img_name = extract_image_from_zip(uploaded_file) 
                             st.session_state.original_img = img
+                            st.session_state.image_name = img_name
                             points = load_points_from_json(uploaded_file)
                             if points:
                                 st.session_state.base_points = points
                         else:
                             st.error("Zip archive must contain exactly one PNG image and one JSON file")
                     except Exception as e:
-                        st.error(f"Error processing zip file: {str(e)}")
+                        st.error(f"Error processing zip file: {str(e)}") 
                 else:
                     try:
                         img = Image.open(uploaded_file).convert("RGB")
                         st.session_state.original_img = img
+                        st.session_state.image_name = uploaded_file.name
                     except Exception as e:
                         st.error(f"Error processing image: {str(e)}")
 
@@ -153,7 +159,7 @@ if st.session_state.sidebar_state == "expanded":
                         mode_radio = st.radio(
                             'Mode',
                             ("Adding dots", "Editing dots"),
-                            index=0 if st.session_state.mode == "draw" else 1,
+                            index=0 if st.session_state.mode == "draw" else 1, 
                             label_visibility="collapsed"
                         )
                         new_mode = "draw" if mode_radio == "Adding dots" else "edit"
@@ -174,7 +180,7 @@ if st.session_state.sidebar_state == "expanded":
                 st.markdown("---")
                 size_container = st.container()
                 with size_container:
-                    st.markdown("**▸ Dot settings**")
+                    st.markdown("**▸ Dot settings**")               
                     col3, col4 = st.columns([6, 3])
                     with col3:
                         st.slider("Size", min_value=1, max_value=20, key="size_slider")
@@ -183,6 +189,7 @@ if st.session_state.sidebar_state == "expanded":
                             "Color", 
                             key="color_picker"
                             )
+         
             with st.expander("**Save**", expanded=False):
                 st.markdown("---")
                 st.button("Markup image (png)", key="save_markup_image")
