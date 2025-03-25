@@ -1,4 +1,9 @@
 import streamlit as st
+import zipfile
+import io
+from PIL import Image
+import json
+import os
 
 st.set_page_config(
     page_title="ScaffoldMarkupTool",
@@ -19,6 +24,9 @@ if "sidebar_state" not in st.session_state:
 
 if "original_img" not in st.session_state:
     st.session_state.original_img = None
+
+if "base_points" not in st.session_state:
+    st.session_state.base_points = None
 
 if "step" not in st.session_state:
     st.session_state.step = 1
@@ -41,12 +49,11 @@ def next_step():
 def back_step():
     if st.session_state.step > 1:
         st.session_state.step -= 1
-        if st.session_state.step == 1:
-            st.session_state.original_img = None
 
 def restart():
     st.session_state.step = 1
     st.session_state.original_img = None
+    st.session_state.base_points = None
 
 if st.session_state.sidebar_state == "expanded":
     with st.sidebar:
@@ -56,13 +63,78 @@ if st.session_state.sidebar_state == "expanded":
                 Step 1: uploading data
             </h3>
             """, unsafe_allow_html=True)
+
             uploaded_file = st.file_uploader(
                 "**Choose an image**", 
-                type=["png", "jpg", "jpeg", "bmp", "gif", "tiff"]
+                type=["png", "jpg", "jpeg", "bmp", "gif", "tiff", "zip"]
             )
+
+            def validate_zip_contents(zip_file):
+                with zipfile.ZipFile(zip_file) as z:
+                    file_list = z.namelist()
+                    png_files = [f for f in file_list if f.lower().endswith('.png')]
+                    json_files = [f for f in file_list if f.lower().endswith('.json')]
+                    return len(png_files) == 1 and len(json_files) == 1
+
+            def extract_image_from_zip(zip_file):
+                with zipfile.ZipFile(zip_file) as z:
+                    file_list = z.namelist()
+                    png_file = next(f for f in file_list if f.lower().endswith('.png'))
+                    with z.open(png_file) as f:
+                        return Image.open(f).convert("RGB"), os.path.basename(png_file)
+            
+            def load_points_from_json(zip_file):
+                with zipfile.ZipFile(zip_file) as z:
+                    json_files = [f for f in z.namelist() if f.lower().endswith('.json')]
+                    if not json_files:
+                        return None
+                    
+                    json_file = json_files[0]
+                    with z.open(json_file) as f:
+                        try:
+                            json_data = json.load(f)
+                        except json.JSONDecodeError:
+                            return None
+                    
+                    if not all(key in json_data for key in ['image_name', 'points']):
+                        return None
+                    
+                    valid_points = []
+                    for point in json_data['points']:
+                        if not all(k in point for k in ['x', 'y', 'size', 'color']):
+                            continue
+                        
+                        try:
+                            valid_points.append({
+                                'x': float(point['x']),
+                                'y': float(point['y']),
+                                'size': float(point['size']),
+                                'color': point['color']
+                            })
+                        except (ValueError, TypeError):
+                            continue
+                    
+                    return valid_points
+
             if uploaded_file is not None:
-                st.session_state.original_img = uploaded_file
-                st.session_state.img = uploaded_file 
+                if uploaded_file.type == "application/zip" or uploaded_file.name.endswith('.zip'):
+                    try:
+                        if validate_zip_contents(uploaded_file):
+                            img, img_name = extract_image_from_zip(uploaded_file)
+                            st.session_state.original_img = img
+                            points = load_points_from_json(uploaded_file)
+                            if points:
+                                st.session_state.base_points = points
+                        else:
+                            st.error("Zip archive must contain exactly one PNG image and one JSON file")
+                    except Exception as e:
+                        st.error(f"Error processing zip file: {str(e)}")
+                else:
+                    try:
+                        img = Image.open(uploaded_file).convert("RGB")
+                        st.session_state.original_img = img
+                    except Exception as e:
+                        st.error(f"Error processing image: {str(e)}")
 
         elif st.session_state.step == 2:
             st.markdown("""
@@ -70,6 +142,7 @@ if st.session_state.sidebar_state == "expanded":
                 Step 2: images marking
             </h3>
             """, unsafe_allow_html=True)
+
             with st.expander("**Tools**", expanded=False):
                 st.markdown("---")
                 edit_container = st.container()
@@ -123,6 +196,7 @@ if st.session_state.sidebar_state == "expanded":
                 Step 3: generation of cluster maps
             </h3>
             """, unsafe_allow_html=True)
+
             with st.expander("**Tools**", expanded=False):
                 st.markdown("---")
                 tool_container = st.container()
@@ -164,7 +238,45 @@ if st.session_state.sidebar_state == "expanded":
             st.button("Next", on_click=next_step, disabled=((st.session_state.step == 1 and st.session_state.original_img is None) or (st.session_state.step == 3)))
 
 if st.session_state.step == 1:
-    st.write("### Шаг 1")
+    st.write("### Step 1: Data Upload")
+    st.write("Here you can read how to work in the program: Help")
+    
+    if st.session_state.get('original_img'):
+        if st.session_state.base_points is not None:
+            st.success(f"✅ Image and {len(st.session_state.base_points)} points from archive successfully uploaded!")
+        else:
+            st.success("✅ Image successfully uploaded!")
+        st.image(st.session_state.original_img, caption="Uploaded Image")
+    else:
+        st.info("ℹ️ Please upload data using the sidebar")
+        st.markdown("""
+        #### You can upload:
+        1. **Single Image**  
+        - Formats: PNG, JPG, JPEG, BMP, GIF, TIFF  
+        - Recommended size: 250-2500 px (larger images will be compressed)  
+        - Starts a new project with blank markup
+
+        2. **Project Archive (ZIP)**  
+        - Must contain:  
+            - Exactly one PNG image (unmarked)  
+            - One JSON file with point data  
+        - Opens existing project with:  
+            - The corresponding image  
+            - Pre-filled markup points  
+        - Allows continuing previous work
+        """)
+        with st.expander("Show format examples"):
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write("**Single Image Example**")
+                st.image("20x_20_0070.jpg", width=150)
+            with col2:
+                st.write("**Project ZIP Contents**")
+                st.code("""
+        my_project.zip
+        ├── image.png      # Unmarked image
+        └── data.json      # Point coordinates & metadata
+                """)
 
 elif st.session_state.step == 2:
     st.write("### Шаг 2")
