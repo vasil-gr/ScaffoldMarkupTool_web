@@ -1,5 +1,8 @@
 import streamlit as st
 
+from config.session_manager import init_session_state
+from config.styles import setup_page_config
+
 
 # Функция для обработки кнопки "Next"
 def next_step():
@@ -25,10 +28,9 @@ def restart():
 def main():
 
     # css и пр
-    # ...
-
+    setup_page_config()
     # инициализация переменных
-    # ...
+    init_session_state()
     
     # Боковая панель
     if st.session_state.sidebar_state == "expanded":
