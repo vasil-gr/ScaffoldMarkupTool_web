@@ -5,19 +5,19 @@ def init_session_state():
 
     # Конфигурация
     INITIAL_POINT_SIZE = 10
-    INITIAL_COLOR = "#FF0000"  # Используем hex-формат без прозрачности
+    INITIAL_COLOR = "#FF0000"  # hex-формат без прозрачности
 
-    DISPLAY_WIDTH = 1500  # Оптимальная ширина для начального отображения
-    MAX_WIDTH = 2500      # Максимальная ширина при увеличении
-    MIN_WIDTH = 300       # Минимальная ширина при уменьшении
-    STEP = 0.05           # Шаг изменения масштаба
+    DISPLAY_WIDTH = 1500  # оптимальная ширина для начального отображения
+    MAX_WIDTH = 2500 # максимальная ширина при увеличении
+    MIN_WIDTH = 300 # минимальная ширина при уменьшении
+    STEP = 0.05 # шаг изменения масштаба
 
     defaults = {
         "sidebar_state": "expanded",
         "original_img": None,
         "image_name": None,
         "step": 1, # режимы (3)
-        "base_points": None, # Храним словари: {'x', 'y', 'size', 'color'}
+        "base_points": None, # {'x', 'y', 'size', 'color'}
         "canvas_data": None,
         "mode": "draw",
         "current_point_size": INITIAL_POINT_SIZE,

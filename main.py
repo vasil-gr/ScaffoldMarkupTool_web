@@ -2,6 +2,7 @@ import streamlit as st
 
 from config.session_manager import init_session_state
 from config.styles import setup_page_config
+from modules.step1_upload import render_sidebar_step1, render_step1
 
 
 # Функция для обработки кнопки "Next"
@@ -13,7 +14,7 @@ def next_step():
 
 # Функция для обработки кнопки "Back"
 def back_step():
-    if st.session_state.step == 2: # зачем нужно: пользователь загружает проект с точками, шаг 1 -> шаг 2 -> шаг 1 -> шаг 2 -> точки должны перерисовываться
+    if st.session_state.step == 2: # когда нужно: пользователь загружает проект с точками, шаг 1 -> шаг 2 -> шаг 1 -> шаг 2 -> точки должны перерисовываться
         st.session_state.step2_initial_render = True
     if st.session_state.step > 1:
         st.session_state.step -= 1
@@ -22,6 +23,7 @@ def back_step():
 def restart():
     st.session_state.step = 1
     st.session_state.clear() # полная очистка всех состояний
+    init_session_state() # повторная инициализация
 
 
 
@@ -39,7 +41,7 @@ def main():
             
             # Контент для каждого шага
             if st.session_state.step == 1:
-                pass
+                render_sidebar_step1()
             elif st.session_state.step == 2:
                 pass
             elif st.session_state.step == 3:
@@ -57,7 +59,7 @@ def main():
     
     # Основное окно для каждого шага
     if st.session_state.step == 1:
-        pass
+        render_step1()
     elif st.session_state.step == 2:
         pass
     elif st.session_state.step == 3:
