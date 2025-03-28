@@ -3,6 +3,7 @@ import streamlit as st
 from config.session_manager import init_session_state
 from config.styles import setup_page_config
 from modules.step1_upload import render_sidebar_step1, render_step1
+from modules.step2_markup import render_markup_sidebar, render_markup_page
 
 
 # Функция для обработки кнопки "Next"
@@ -43,7 +44,7 @@ def main():
             if st.session_state.step == 1:
                 render_sidebar_step1()
             elif st.session_state.step == 2:
-                pass
+                render_markup_sidebar()
             elif st.session_state.step == 3:
                 pass
             
@@ -61,7 +62,7 @@ def main():
     if st.session_state.step == 1:
         render_step1()
     elif st.session_state.step == 2:
-        pass
+        render_markup_sidebar()
     elif st.session_state.step == 3:
         pass
 
