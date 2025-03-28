@@ -51,7 +51,6 @@ def render_markup_sidebar():
                     st.session_state.canvas_data = {"version": "4.6.0", "objects": []}
                     st.session_state.redraw_id += 1 # так как эта переменная финурирует в ключе холста, то ее изменение перезагрузит холст
 
-        # Разделитель
         st.markdown("---")
 
         # Подраздел 2: Zoom
@@ -75,8 +74,6 @@ def render_markup_sidebar():
                         st.session_state.scale = new_scale
                         st.session_state.canvas_data = generate_canvas_data()
 
-
-        # Разделитель
         st.markdown("---")
 
         # Подраздел 3: настройка точек

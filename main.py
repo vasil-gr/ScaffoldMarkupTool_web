@@ -2,8 +2,9 @@ import streamlit as st
 
 from config.session_manager import init_session_state
 from config.styles import setup_page_config
-from modules.step1_upload import render_sidebar_step1, render_step1
+from modules.step1_upload import render_upload_sidebar, render_upload_page
 from modules.step2_markup import render_markup_sidebar, render_markup_page
+from modules.step3_cluster import render_cluster_sidebar, render_cluster_page
 
 
 # Функция для обработки кнопки "Next"
@@ -42,11 +43,11 @@ def main():
             
             # Контент для каждого шага
             if st.session_state.step == 1:
-                render_sidebar_step1()
+                render_upload_sidebar()
             elif st.session_state.step == 2:
                 render_markup_sidebar()
             elif st.session_state.step == 3:
-                pass
+                render_cluster_sidebar()
             
             # Общие кнопки навигации ("Back", "Next" и "Restart")
             col1, col2, col3 = st.columns([1, 1, 1])
@@ -60,11 +61,11 @@ def main():
     
     # Основное окно для каждого шага
     if st.session_state.step == 1:
-        render_step1()
+        render_upload_page()
     elif st.session_state.step == 2:
-        render_markup_sidebar()
+        render_markup_page()
     elif st.session_state.step == 3:
-        pass
+        render_cluster_page()
 
 if __name__ == "__main__":
     main()
