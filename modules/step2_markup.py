@@ -11,9 +11,10 @@ from datetime import datetime
 import zipfile
 
 
-# --- RENDER: sidebar --------------------------------------
+# --- RENDER: БОКОВАЯ ПАНЕЛЬ --------------------------------------
 
 def render_markup_sidebar():
+    """Боковая панель для шага 2: разметка изображения точками"""
     st.markdown("""
     <h3 style='font-size: 18px; margin-bottom: 15px;'>
         Step 2: images marking
@@ -22,17 +23,15 @@ def render_markup_sidebar():
     
     # Вкладка "Tools"
     with st.expander("**Tools**", expanded=False):
-
         st.markdown("---")
         
         # Подраздел 1: выбор режима
         edit_container = st.container()
         with edit_container:
             st.markdown("**▸ Mode**")
-
             col1, col2 = st.columns([6, 3])
-            with col1:
-                # Выбор режима (рисовать/редактировать)
+
+            with col1: # Выбор режима (рисовать/редактировать)
                 mode_radio = st.radio(
                     "Mode",
                     ("Adding dots", "Editing dots"),
@@ -45,11 +44,10 @@ def render_markup_sidebar():
                     st.session_state.canvas_data = generate_canvas_data()
 
             with col2:
-                # Удаление всех точек
-                if st.button("Clear", disabled=not st.session_state.base_points):
+                if st.button("Clear", disabled=not st.session_state.base_points): # Удаление всех точек
                     st.session_state.base_points.clear()
                     st.session_state.canvas_data = {"version": "4.6.0", "objects": []}
-                    st.session_state.redraw_id += 1 # так как эта переменная финурирует в ключе холста, то ее изменение перезагрузит холст
+                    st.session_state.redraw_id += 1 # так как эта переменная фигурирует в ключе холста, то ее изменение перезагрузит холст
 
         st.markdown("---")
 
@@ -76,28 +74,23 @@ def render_markup_sidebar():
 
         st.markdown("---")
 
-        # Подраздел 3: настройка точек
+        # Подраздел 3: настройка новых точек (не влияет на уже поставленные)
         size_container = st.container()
         with size_container:
             st.markdown("**▸ Dot settings**")
             col3, col4 = st.columns([6, 3])
 
-            # Настройки для новых точек (не влияют на существующие)
-            with col3:
-                # Слайдер размера точек
+            with col3: # Слайдер размера точек
                 st.session_state.current_point_size = st.slider("Size", min_value=1, max_value=20, value=st.session_state.current_point_size, key="size_slider")
-            with col4:
-                # Палитра выбора цвета точек
+            with col4: # Палитра выбора цвета точек
                 st.session_state.current_point_color = st.color_picker("Color", st.session_state.current_point_color, key="color_picker")
 
-
-            
+     
     # Вкладка "Save"
     with st.expander("**Save**", expanded=False):
-
         DOWNLOAD_CHOICES = ["Marked image (png)", "Markup only (png)", "Points data (json)", "Full Project (ZIP)"]
 
-        # Выпадающий список
+        # Варианты сохранения
         selected_option = st.selectbox(
             "Select download option:",
             options=DOWNLOAD_CHOICES,
@@ -167,14 +160,11 @@ def render_markup_sidebar():
 
 
 
-# --- RENDER: основное окно --------------------------------------
+# --- RENDER: ОСНОВНОЕ ОКНО --------------------------------------
 
 def render_markup_page():
-
-    # Конфигурация страницы (втч горизонатальная полоса прокрутки)
-    setup_step2_config()
-
-    # Интерфейс
+    """Основное окно для шага 2: разметка изображения точками"""
+    setup_step2_config() # конфигурация страницы (втч горизонатальная полоса прокрутки)
 
     # Масштабирование изображения
     scaled_width = int(st.session_state.original_img.size[0] * st.session_state.scale)
@@ -183,16 +173,17 @@ def render_markup_page():
     # динамически адаптируем размер холста под размер изображения (в зависимости от его масштаба)
     setup_step2_config_frame(scaled_width)
 
-    # Загрузка точек на холст (для случая открытия проекта)
+    # Загрузка точек на холст (для случая загрузки пользователем проекта)
     if st.session_state.step2_initial_render:
         if st.session_state.base_points is not None:
             st.session_state.canvas_data = generate_canvas_data()
         else:
             st.session_state.canvas_data = {"version": "4.6.0", "objects": []}
         st.session_state.step2_initial_render = False
+
     # Холст
     canvas_result = st_canvas(
-        fill_color=st.session_state.current_point_color + "B3",  # Добавляем прозрачность
+        fill_color=st.session_state.current_point_color + "B3",
         stroke_width=0,
         stroke_color=st.session_state.current_point_color + "B3",
         background_image=st.session_state.original_img,
@@ -209,24 +200,20 @@ def render_markup_page():
     # Обработка изменений на холсте
     if canvas_result.json_data is not None:
         new_objects = canvas_result.json_data.get("objects", [])
-        
         new_base_points = []
+
         for obj in new_objects:
             if obj["type"] == "circle":
-                # Определяем центр точки с учетом originY
                 center_x = obj["left"] + obj["radius"]
                 if obj.get("originY") == "center":
-                    center_y = obj["top"]  # Уже центр
+                    center_y = obj["top"]
                 else:
                     center_y = obj["top"] + obj["radius"]
                 
-                # Обратное масштабирование координат и размера
                 base_x = center_x / st.session_state.scale
                 base_y = center_y / st.session_state.scale
                 base_size = obj["radius"] / st.session_state.scale
-                
-                # Получаем цвет без прозрачности
-                color = obj["fill"][:7] if obj["fill"].startswith('#') else "#FF0000"  # fallback
+                color = obj["fill"][:7] if obj["fill"].startswith('#') else "#FF0000"  # цвет без прозрачности
                 
                 new_base_points.append({
                     'x': base_x,
@@ -251,12 +238,11 @@ def render_markup_page():
 
 
 
-# --- UTILS: Функции для сохранения --------------------------------------
+# --- UTILS: ФУНКЦИИ ДЛЯ СОХРАНЕНИЯ --------------------------------------
 
-# Функция для добавление точек на изображение
 def add_dots_to_image(new_image):
-    """Наносит точки на изображение"""
-    if st.session_state.base_points:  # Рисуем точки только если они есть
+    """Нанесение всех точек на изображение"""
+    if st.session_state.base_points:
         draw = ImageDraw.Draw(new_image)
         for point in st.session_state.base_points:
             x, y = point['x'], point['y']
@@ -267,29 +253,27 @@ def add_dots_to_image(new_image):
                 fill=color,
                 outline=color
             )
-    
-    # Создаем байтовый поток
+
     img_byte_arr = io.BytesIO()
     new_image.save(img_byte_arr, format='PNG')
     img_byte_arr.seek(0)
     return img_byte_arr
 
-# Функция для создания изображения с разметкой
+
 def create_marked_image():
-    """Создает копию оригинального изображения с нанесенными точками"""
+    """Создание изображения с разметкой"""
     new_image = st.session_state.original_img.copy()
     return add_dots_to_image(new_image)
 
-# Функция для создания разметки на прозрачном фоне
+
 def create_markup_only():
-    """Создает изображение с точками на прозрачном фоне"""
+    """Создание изображения с точками на прозрачном фоне"""
     transparent_img = Image.new('RGBA', (st.session_state.original_img.size[0], st.session_state.original_img.size[1]), (0, 0, 0, 0)) # прозрачный фон (режим 'RGBA')
     return add_dots_to_image(transparent_img)
 
 
-# Функция для сохранения json файла с точками
 def save_points():
-    """Создаёт JSON-данные с информацией о точках"""
+    """Создание JSON-файла с информацией о точках"""
     points_data = {
         "image_name": st.session_state.image_name,
         "image_size": {
@@ -300,26 +284,21 @@ def save_points():
         "point_count": len(st.session_state.base_points),
         "scale": {
             "unit": "nanometers",
-            "value_per_pixel": None  # Можно заменить на реальное значение
+            "value_per_pixel": None  # ! можно добавить настройки
         },
         "creation_date": datetime.now().strftime("%Y-%m-%d"),
-        "author": "user",  # Можно заменить на реальное значение
-        "notes": None  # Можно добавить поле для заметок
+        "author": "user",  # ! можно добавить настройки
+        "notes": None  # ! можно добавить настройки
     }
     
-    # Конвертируем в JSON строку
-    json_str = json.dumps(points_data, indent=4)
-    
-    # Создаем байтовый поток
+    json_str = json.dumps(points_data, indent=4) # конвертация в JSON строку
     json_bytes = io.BytesIO(json_str.encode('utf-8'))
     json_bytes.seek(0)
     return json_bytes
 
-    
-# Функция для сохранения проекта (архив исходного изображения и json-файла с точками)
+
 def save_project():
-    """Создает ZIP-архив с исходным изображением и JSON-файлом точек"""
-    # Создаем байтовый поток для ZIP-архива
+    """Создание ZIP-архива с исходным изображением и JSON-файлом точек"""
     zip_buffer = io.BytesIO()
     
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -330,7 +309,7 @@ def save_project():
         zipf.writestr(f"{st.session_state.image_name}.png", img_byte_arr.getvalue())
         
         # 2. Добавляем JSON с точками
-        json_data = save_points()  # Используем существующую функцию
+        json_data = save_points()
         zipf.writestr(f"{st.session_state.image_name}_points.json", json_data.getvalue())
     
     zip_buffer.seek(0)
@@ -338,23 +317,23 @@ def save_project():
 
 
 
-
-# --- UTILS: данные CANVAS --------------------------
+# --- UTILS: ДАННЫЕ ХОЛСТА --------------------------
 
 def get_scaled_points():
-    """Возвращает масштабированные точки с их параметрами"""
+    """Возвращает масштабированные точки"""
     return [
         {
             'x': point['x'] * st.session_state.scale,
             'y': point['y'] * st.session_state.scale,
             'size': point['size'] * st.session_state.scale,
-            'color': f"{point['color']}B3"  # Добавляем фиксированную прозрачность 0.7 (B3 в hex)
+            'color': f"{point['color']}B3"  # фиксированная прозрачность 0.7 (B3 в hex)
         }
         for point in st.session_state.base_points
     ]
 
-# Генерация данных для холста
+
 def generate_canvas_data():
+    """Генерация JSON-данных для холста на основе текущих точек и режима"""
     if st.session_state.base_points is not None:
         scaled_points = get_scaled_points()
         is_edit_mode = (st.session_state.mode == "edit")

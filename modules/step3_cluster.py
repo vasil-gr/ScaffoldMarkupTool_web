@@ -1,9 +1,10 @@
 import streamlit as st
 
 
-# --- RENDER: sidebar --------------------------------------
+# --- RENDER: БОКОВАЯ ПАНЕЛЬ --------------------------------------
 
 def render_cluster_sidebar():
+    """Боковая панель для шага 3: кластеризация"""
     st.markdown("""
     <h3 style='font-size: 18px; margin-bottom: 15px;'>
         Step 3: generation of cluster maps
@@ -55,7 +56,8 @@ def render_cluster_sidebar():
         st.button("Area histogram", key="save_histogram")
 
 
-# --- RENDER: основное окно --------------------------------------
+# --- RENDER: ОСНОВНОЕ ОКНО --------------------------------------
 
 def render_cluster_page():
+    """Основное окно для шага 3: кластеризация"""
     st.write("### Step 3")

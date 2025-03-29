@@ -1,11 +1,11 @@
 import streamlit as st
 
 def init_session_state():
-    """Инициализация всех переменных состояния"""
+    """Инициализация переменных"""
 
     # Конфигурация
     INITIAL_POINT_SIZE = 10
-    INITIAL_COLOR = "#FF0000"  # hex-формат без прозрачности
+    INITIAL_COLOR = "#FF0000"
 
     DISPLAY_WIDTH = 1500  # оптимальная ширина для начального отображения
     MAX_WIDTH = 2500 # максимальная ширина при увеличении
