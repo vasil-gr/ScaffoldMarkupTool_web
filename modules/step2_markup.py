@@ -1,6 +1,5 @@
 import streamlit as st
 from config.styles import setup_step2_config, setup_step2_config_frame
-import math
 
 from streamlit_drawable_canvas import st_canvas
 from PIL import Image, ImageDraw
@@ -180,7 +179,7 @@ def render_markup_page():
         else:
             st.session_state.canvas_data = {"version": "4.6.0", "objects": []}
         st.session_state.step2_initial_render = False
-
+    
     # Холст
     canvas_result = st_canvas(
         fill_color=st.session_state.current_point_color + "B3",
