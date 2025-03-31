@@ -39,7 +39,7 @@ def setup_step1_config():
 
 # --- НАСТРОЙКА ДЛЯ ШАГА 2 (РАЗМЕТКА) -------------------------------
 
-def setup_step2_config():
+def setup_step2and3_config():
     """Настройка для шага 2 (разметка): отступы, ширина страницы, полосы прокрутки при необходимости"""
     st.markdown(f"""
     <style>
@@ -65,6 +65,22 @@ def setup_step2_config_frame(width):
         border: none !important;
         margin: 0 !important;
         padding: 0 !important;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
+
+
+
+# --- НАСТРОЙКА ДЛЯ ШАГА 3 (КЛАСТЕРИЗАЦИЯ) -------------------------------
+
+def setup_step3_config_frame(width):
+    """Фиксирует ширину контейнера и изображения, принудительно задавая ширину."""
+    st.markdown(f"""
+    <style>
+    .block-container {{
+        width: {width}px !important;
+        margin-right: auto !important;  /* Отключаем центрирование */
+
     }}
     </style>
     """, unsafe_allow_html=True)

@@ -1,5 +1,7 @@
 import streamlit as st
 
+from config.styles import setup_step2and3_config, setup_step3_config_frame
+
 
 # --- RENDER: БОКОВАЯ ПАНЕЛЬ --------------------------------------
 
@@ -45,9 +47,16 @@ def render_cluster_sidebar():
             st.markdown("**▸ Zoom**")
             col5, col6 = st.columns([6, 3])
             with col5:
-                st.slider("Zoom", 0.15, 0.95, 0.5, 0.05, label_visibility="collapsed")
+                new_scale = st.slider("Zoom", st.session_state.min_scale, st.session_state.max_scale, st.session_state.scale, st.session_state.scale_step, label_visibility="collapsed")
+                if new_scale != st.session_state.scale:
+                    st.session_state.scale = new_scale
+                    st.rerun()
             with col6:
-                st.button("Reset", key="zoom_reset", help="Zoom_reset")
+                # Сброс масштаба
+                if st.button("Reset", key="zoom_reset", help="Zoom reset"):
+                    new_scale = st.session_state.initial_scale
+                    if new_scale != st.session_state.scale:
+                        st.session_state.scale = new_scale
 
     # Вкладка "Save"
     with st.expander("**Save**", expanded=False):
@@ -60,4 +69,15 @@ def render_cluster_sidebar():
 
 def render_cluster_page():
     """Основное окно для шага 3: кластеризация"""
-    st.write("### Step 3")
+    setup_step2and3_config()  # Настройка отступов и прокрутки
+
+    # Масштабирование изображения
+    scaled_width = int(st.session_state.original_img.size[0] * st.session_state.scale)
+    
+    setup_step3_config_frame(scaled_width)  # фиксируем ширину контейнера
+    
+    # Контейнер с изображением (c динамической шириной)
+    with st.container():
+        st.image(st.session_state.original_img, width=scaled_width)
+    
+    st.write(st.session_state.base_points)

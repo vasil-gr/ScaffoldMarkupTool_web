@@ -19,10 +19,9 @@ def next_step():
 
 def back_step():
     """Обработка кнопки Back"""
-    if st.session_state.step == 2: # когда это нужно: пользователь загружает проект с точками, шаг 1 -> шаг 2 -> шаг 1 -> шаг 2 -> точки должны перерисовываться
-        st.session_state.step2_initial_render = True
-    if st.session_state.step > 1:
+    if st.session_state.step == 3:
         st.session_state.step -= 1
+        st.session_state.step2_initial_render = True
 
 
 def restart():
@@ -55,7 +54,7 @@ def main():
             with col1:
                 st.button("Restart", on_click=restart, disabled=st.session_state.step == 1)
             with col2:
-                st.button("Back", on_click=back_step, disabled=st.session_state.step == 1)
+                st.button("Back", on_click=back_step, disabled=st.session_state.step != 3)
             with col3:
                 st.button("Next", on_click=next_step, disabled=((st.session_state.step == 1 and st.session_state.original_img is None) or (st.session_state.step == 3)))
 

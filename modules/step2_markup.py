@@ -1,5 +1,5 @@
 import streamlit as st
-from config.styles import setup_step2_config, setup_step2_config_frame
+from config.styles import setup_step2and3_config, setup_step2_config_frame
 
 from streamlit_drawable_canvas import st_canvas
 from PIL import Image, ImageDraw
@@ -163,7 +163,7 @@ def render_markup_sidebar():
 
 def render_markup_page():
     """Основное окно для шага 2: разметка изображения точками"""
-    setup_step2_config() # конфигурация страницы (втч горизонатальная полоса прокрутки)
+    setup_step2and3_config() # конфигурация страницы (втч горизонатальная полоса прокрутки)
 
     # Масштабирование изображения
     scaled_width = int(st.session_state.original_img.size[0] * st.session_state.scale)
