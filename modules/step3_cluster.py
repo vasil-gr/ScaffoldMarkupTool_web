@@ -1,4 +1,6 @@
 import streamlit as st
+from PIL import Image, ImageDraw
+import numpy as np
 
 from config.styles import setup_step2and3_config, setup_step3_config_frame
 
@@ -31,13 +33,15 @@ def render_cluster_sidebar():
 
             col1, col2 = st.columns([2, 2])
             with col1:
-                st.toggle("Img")
-                st.toggle("Map")                        
+                st.session_state.show_img = st.toggle("Img", st.session_state.show_img)
+                st.session_state.show_map = st.toggle("Map", st.session_state.show_map)                      
             with col2:
-                st.toggle("Dots")
-                st.toggle("Filling")  
+                st.session_state.show_dots = st.toggle("Dots", st.session_state.show_dots)
+                st.session_state.show_filling = st.toggle("Filling", st.session_state.show_filling, disabled=not st.session_state.show_map)
 
-            st.button("Create map", key="create_map")
+            if st.button("Create map", key="create_map"):
+                st.session_state.modified_img = create_modified_image()
+                st.rerun()
 
         st.markdown("---")
 
@@ -71,13 +75,54 @@ def render_cluster_page():
     """Основное окно для шага 3: кластеризация"""
     setup_step2and3_config()  # Настройка отступов и прокрутки
 
+    if st.session_state.step2_img_render:
+        st.session_state.modified_img = create_modified_image()
+        st.session_state.step2_img_render = False
+    display_img = st.session_state.modified_img
+
     # Масштабирование изображения
-    scaled_width = int(st.session_state.original_img.size[0] * st.session_state.scale)
+    scaled_width = int(display_img.size[0] * st.session_state.scale)
     
     setup_step3_config_frame(scaled_width)  # фиксируем ширину контейнера
     
     # Контейнер с изображением (c динамической шириной)
     with st.container():
-        st.image(st.session_state.original_img, width=scaled_width)
+        st.image(display_img, width=scaled_width)
     
     st.write(st.session_state.base_points)
+
+
+
+
+def create_modified_image():
+    """Создает модифицированное изображение на основе текущих настроек"""
+    img = st.session_state.original_img.copy()
+    
+    # Если Img выкл - серый фон
+    if not st.session_state.get('show_img', True):
+        gray_img = Image.new('RGB', img.size, (128, 128, 128))
+        img = gray_img
+    
+    # Если Dots вкл - рисуем точки
+    if st.session_state.get('show_dots', True):
+        if st.session_state.base_points is not None:
+            draw = ImageDraw.Draw(img)
+            for point in st.session_state.base_points:
+                x, y = point['x'], point['y']
+                size = point['size']
+                color = point['color']
+                draw.ellipse(
+                    [(x - size, y - size), (x + size, y + size)],
+                    fill=color,
+                    outline=color
+                )
+    
+    # Если Map вкл - рисуем кластеры
+    if st.session_state.get('show_map', True):
+        pass
+
+    # Если Filling вкл - рисуем заливку
+    if st.session_state.get('show_filling', True):
+        pass
+    
+    return img

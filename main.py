@@ -15,6 +15,7 @@ def next_step():
         return
     else:
         st.session_state.step += 1
+        st.session_state.step2_img_render = True
 
 
 def back_step():

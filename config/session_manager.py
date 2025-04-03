@@ -44,6 +44,16 @@ def init_session_state():
         "step2_initial_render": True,
         # счётчик перерисовок (при нажатии кнопки "Clear"), нужен чтобы обновлять canvas
         "redraw_id": 0,
+        # Инициация перехода на шаг 3 для прорисовки изобаржения
+        "step3_img_render": True,
+
+        # Инициализация состояний переключателей на шаге 3
+        "show_img": True,
+        "show_dots": True,
+        "show_map": False,
+        "show_filling": False,
+
+
     }
     
     for key, value in defaults.items():
