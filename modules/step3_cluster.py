@@ -1,8 +1,10 @@
 import streamlit as st
 from PIL import Image, ImageDraw
 import numpy as np
+from shapely.geometry import Polygon, box
 
 from config.styles import setup_step2and3_config, setup_step3_config_frame
+from voronoi import weighted_voronoi as wv
 
 
 # --- RENDER: БОКОВАЯ ПАНЕЛЬ --------------------------------------
@@ -92,7 +94,48 @@ def render_cluster_page():
     st.write(st.session_state.base_points)
 
 
+    points = [
+        (1.39, 0.25), (2.75, 2.23), (1.36, 1.77), (1.92, 0.87), (0.88, 0.22),
+        (0.11, 1.83), (3.35, 1.12), (1.05, 1.08), (3.33, 1.04), (3.76, 1.05),
+        (1.47, 2.34), (0.01, 1.67), (2.23, 2.77), (1.65, 1.50), (1.91, 0.19),
+        (0.98, 0.24), (0.28, 2.84), (2.65, 1.34), (0.45, 2.29), (3.40, 3.40),
+        (2.41, 0.75), (3.00, 3.22), (2.59, 2.59), (1.18, 0.07), (1.52, 2.07)
+    ]
 
+    bbox = (0, 0, 4, 3.6)
+
+    weights = [
+        0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, -0.08, 0.0, 0.0,
+        -0.06, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, -0.1, 0.0,
+        0.0, 0.0, 0.04, 0.0, -0.06
+    ]
+
+    # Note: In general, weights should be constrained (to avoid degenerate behavior).
+    # One way to do this is by estimating the average spacing between points
+    # using the formula: 0.5 * sqrt(w * h / N), where w and h are the bounding box dimensions and N is the number of points.
+    # For example, here: k = 0.5 * sqrt(4 * 3.5 / 28) ≈ 0.37
+    # Then, we can limit the weights to the range (-a*k, +a*k),
+    # where a is a user-defined coefficient (chosen experimentally).
+    # Setting weight = 0 gives a standard Voronoi diagram.
+
+    # All bounded faces
+    cells = wv.build_apollonius_polygons(points, weights)
+    st.write(len(cells))
+
+    # Filtering with bbox
+    filtered_cells = filter_cells_outside_bbox(cells, bbox)
+    st.write(len(filtered_cells))
+
+    # Results
+    for c in filtered_cells:
+        st.write(f"Cell {c.index}, boundary={c.boundary}")
+
+
+
+
+# --- UTILS: НАСТРОЙКА ИЗОБРАЖЕНИЯ --------------------------------------
 
 def create_modified_image():
     """Создает модифицированное изображение на основе текущих настроек"""
@@ -126,3 +169,38 @@ def create_modified_image():
         pass
     
     return img
+
+
+
+
+
+
+def filter_cells_outside_bbox(cells, bbox):
+    """
+    Returns a new list of Voronoi cells whose polygons are COMPLETELY
+    contained within the bounding box [minx, maxx] x [miny, maxy].
+    If a polygon goes outside the box, it is skipped and not returned.
+    """
+    result = []
+    minx, miny, maxx, maxy = bbox
+    clip_box = box(minx, miny, maxx, maxy)
+
+    for cell in cells:
+        poly_coords = cell.boundary
+        if len(poly_coords) < 3:
+            continue
+
+        polygon = Polygon(poly_coords)
+        if polygon.is_empty:
+            continue
+
+        # Crossing with a frame
+        intersection = polygon.intersection(clip_box)
+        if intersection.is_empty:
+            continue
+        if not intersection.equals(polygon):
+            continue
+
+        result.append(cell)
+
+    return result
