@@ -1,9 +1,10 @@
 import streamlit as st
+from streamlit_image_coordinates import streamlit_image_coordinates
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 from shapely.geometry import Polygon, box
 
-from config.styles import setup_step2and3_config, setup_step3_config_frame
+from config.styles import setup_step2and3_config, setup_step2and3_config_frame
 from voronoi import weighted_voronoi as wv
 
 
@@ -94,13 +95,18 @@ def render_cluster_page():
     display_img = st.session_state.modified_img
 
     # Масштабирование изображения
-    scaled_width = int(display_img.size[0] * st.session_state.scale)
-    
-    setup_step3_config_frame(scaled_width)  # фиксируем ширину контейнера
-    
-    # Контейнер с изображением (c динамической шириной)
-    with st.container():
-        st.image(display_img, width=scaled_width)
+    scaled_width = int(st.session_state.original_img.size[0] * st.session_state.scale)
+    scaled_height = int(st.session_state.original_img.size[1] * st.session_state.scale)
+    image_resized = display_img.resize((scaled_width, scaled_height)).convert("RGB")
+
+    # Стили
+    setup_step2and3_config_frame(scaled_width)
+
+    # Получаем координаты от клика
+    coords = streamlit_image_coordinates(image_resized, key="click_img_with_scroll")
+
+
+
     
     st.write(st.session_state.base_points)
 

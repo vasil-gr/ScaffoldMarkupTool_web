@@ -1,5 +1,5 @@
 import streamlit as st
-from config.styles import setup_step2and3_config, setup_step2_config_frame
+from config.styles import setup_step2and3_config, setup_step2and3_config_frame
 
 from streamlit_drawable_canvas import st_canvas
 from PIL import Image, ImageDraw
@@ -170,7 +170,7 @@ def render_markup_page():
     scaled_height = int(st.session_state.original_img.size[1] * st.session_state.scale)
 
     # динамически адаптируем размер холста под размер изображения (в зависимости от его масштаба)
-    setup_step2_config_frame(scaled_width)
+    setup_step2and3_config_frame(scaled_width)
 
     # Загрузка точек на холст (для случая загрузки пользователем проекта)
     if st.session_state.step2_initial_render:

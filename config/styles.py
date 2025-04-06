@@ -37,7 +37,7 @@ def setup_step1_config():
     """, unsafe_allow_html=True)
 
 
-# --- НАСТРОЙКА ДЛЯ ШАГА 2 (РАЗМЕТКА) -------------------------------
+# --- НАСТРОЙКА ДЛЯ ШАГА 2 и 3 (РАЗМЕТКА и КЛАСТЕРИЗАЦИЯ) -------------------------------
 
 def setup_step2and3_config():
     """Настройка для шага 2 (разметка): отступы, ширина страницы, полосы прокрутки при необходимости"""
@@ -53,7 +53,7 @@ def setup_step2and3_config():
     """, unsafe_allow_html=True)
 
 
-def setup_step2_config_frame(width):
+def setup_step2and3_config_frame(width):
     """Устанавливает ширину холста (iframe) динамически под размер изображения.
     Так как холст - основной объект по ширине, то он определяет необходимость горизонтальной прокрутки.
     """
@@ -69,18 +69,3 @@ def setup_step2_config_frame(width):
     </style>
     """, unsafe_allow_html=True)
 
-
-
-# --- НАСТРОЙКА ДЛЯ ШАГА 3 (КЛАСТЕРИЗАЦИЯ) -------------------------------
-
-def setup_step3_config_frame(width):
-    """Фиксирует ширину контейнера и изображения, принудительно задавая ширину."""
-    st.markdown(f"""
-    <style>
-    .block-container {{
-        width: {width}px !important;
-        margin-right: auto !important;  /* Отключаем центрирование */
-
-    }}
-    </style>
-    """, unsafe_allow_html=True)
