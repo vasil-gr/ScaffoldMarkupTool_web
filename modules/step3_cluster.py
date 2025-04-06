@@ -22,47 +22,60 @@ def render_cluster_sidebar():
 
         st.markdown("---")
 
-        # Подраздел 1: Map settings
-        tool_container = st.container()
-        with tool_container:
-            st.markdown("**▸ Map settings**")
+        # Подраздел 1: Weight
+        weight_container = st.container()
+        with weight_container:
+            st.markdown("**▸ Weight**")
 
-            st.select_slider(
-                "Optimization of borders",
-                options=["Base", "0.2", "0.4", "0.6", "0.8", "Optimal"], 
-                label_visibility="collapsed"
-            )
-
-            col1, col2 = st.columns([2, 2])
+            col1, col2 = st.columns([6, 3])
             with col1:
-                st.session_state.show_img = st.toggle("Img", st.session_state.show_img)
-                st.session_state.show_map = st.toggle("Map", st.session_state.show_map)                      
+                new_weight = st.slider("Weight", st.session_state.min_scale, st.session_state.max_scale, st.session_state.scale, st.session_state.scale_step, label_visibility="collapsed")
+                # if new_weight != st.session_state.weight:
+                #    st.session_state.weight = new_weight
+                #    st.rerun()
             with col2:
-                st.session_state.show_dots = st.toggle("Dots", st.session_state.show_dots)
-                st.session_state.show_filling = st.toggle("Filling", st.session_state.show_filling, disabled=not st.session_state.show_map)
-
-            if st.button("Create map", key="create_map"):
-                st.session_state.modified_img = create_modified_image()
-                st.rerun()
-
+                if st.button("Reset", key="W_reset"):
+                    pass
+        
         st.markdown("---")
 
         # Подраздел 2: Zoom (аналогично как в шаге 2)
         zoom_container = st.container()
         with zoom_container:
             st.markdown("**▸ Zoom**")
-            col5, col6 = st.columns([6, 3])
-            with col5:
+            col3, col4 = st.columns([6, 3])
+            with col3:
                 new_scale = st.slider("Zoom", st.session_state.min_scale, st.session_state.max_scale, st.session_state.scale, st.session_state.scale_step, label_visibility="collapsed")
                 if new_scale != st.session_state.scale:
                     st.session_state.scale = new_scale
                     st.rerun()
-            with col6:
+            with col4:
                 # Сброс масштаба
                 if st.button("Reset", key="zoom_reset", help="Zoom reset"):
                     new_scale = st.session_state.initial_scale
                     if new_scale != st.session_state.scale:
                         st.session_state.scale = new_scale
+                        st.rerun()
+
+        st.markdown("---")
+
+        # Подраздел 3: Map settings
+        tool_container = st.container()
+        with tool_container:
+            st.markdown("**▸ Map settings**")
+
+            col5, col6 = st.columns([2, 2])
+            with col5:
+                st.session_state.show_img = st.toggle("Img", st.session_state.show_img)
+                st.session_state.show_clasters = st.toggle("Clasters", st.session_state.show_clasters)                      
+            with col6:
+                st.session_state.show_dots = st.toggle("Dots", st.session_state.show_dots)
+                st.session_state.show_filling = st.toggle("Filling", st.session_state.show_filling, disabled=not st.session_state.show_clasters)
+
+            if st.button("Create map", key="create_map"):
+                st.session_state.modified_img = create_modified_image()
+                st.rerun()
+
 
     # Вкладка "Save"
     with st.expander("**Save**", expanded=False):
@@ -161,7 +174,7 @@ def create_modified_image():
                 )
     
     # Если Map вкл - рисуем кластеры
-    if st.session_state.get('show_map', True):
+    if st.session_state.get('show_clasters', True):
         pass
 
     # Если Filling вкл - рисуем заливку
