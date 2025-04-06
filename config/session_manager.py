@@ -40,6 +40,12 @@ def init_session_state():
         "data_ready": False,
         "download_data": None,
 
+        # Инициализация download_option_3 - вариант скачивания на третьем шаге
+        "download_option_3": None,
+        "download_option_ind_3": None,
+        "data_ready_3": False,
+        "download_data_3": None,
+
         # Инициализация флага первого рендера на шаге 2
         "step2_initial_render": True,
         "step2_img_render": True,

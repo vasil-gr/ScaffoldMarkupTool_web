@@ -108,12 +108,12 @@ def render_markup_sidebar():
         download_config = {
             "Marked image (png)": {
                 "func": create_marked_image,
-                "file_name": f"{st.session_state.image_name}_img+mark.png",
+                "file_name": f"{os.path.splitext(st.session_state.image_name)[0]}_img+mark.png",
                 "mime": "image/png"
             },
             "Markup only (png)": {
                 "func": create_markup_only,
-                "file_name": f"{st.session_state.image_name}_mark.png",
+                "file_name": f"{os.path.splitext(st.session_state.image_name)[0]}_mark.png",
                 "mime": "image/png"
             },
             "Points data (json)": {
@@ -316,11 +316,11 @@ def save_project():
         img_byte_arr = io.BytesIO()
         st.session_state.original_img.save(img_byte_arr, format='PNG')
         img_byte_arr.seek(0)
-        zipf.writestr(f"{st.session_state.image_name}.png", img_byte_arr.getvalue())
+        zipf.writestr(f"{os.path.splitext(st.session_state.image_name)[0]}.png", img_byte_arr.getvalue())
         
         # 2. Добавляем JSON с точками
         json_data = save_points()
-        zipf.writestr(f"{st.session_state.image_name}_points.json", json_data.getvalue())
+        zipf.writestr(f"{os.path.splitext(st.session_state.image_name)[0]}_points.json", json_data.getvalue())
     
     zip_buffer.seek(0)
     return zip_buffer

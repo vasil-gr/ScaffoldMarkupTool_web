@@ -2,9 +2,14 @@ import streamlit as st
 from streamlit_image_coordinates import streamlit_image_coordinates
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
+import io
+import json
+import os
+from datetime import datetime
 from shapely.geometry import Polygon, box
 
 from config.styles import setup_step2and3_config, setup_step2and3_config_frame
+from modules.step2_markup import save_points, save_project
 from voronoi import weighted_voronoi as wv
 
 
@@ -79,9 +84,79 @@ def render_cluster_sidebar():
 
     # Вкладка "Save"
     with st.expander("**Save**", expanded=False):
-        st.button("Image (png)", key="save_img_png")
-        st.button("Morphological parameters", key="save_params")
-        st.button("Area histogram", key="save_histogram")
+        DOWNLOAD_CHOICES = ["Claster map (png)", "Claster areas (json)", "Points data (json)", "Full Project (ZIP)"]
+
+        # Варианты сохранения
+        selected_option_3 = st.selectbox(
+            "Select download option:",
+            options=DOWNLOAD_CHOICES,
+            index=st.session_state.download_option_ind_3,
+            key='download_option_selector_3'
+        )
+
+        # Обновляем состояние при изменении выбора
+        if selected_option_3 != st.session_state.download_option_3:
+            st.session_state.download_option_3 = selected_option_3
+            st.session_state.download_option_ind_3 = DOWNLOAD_CHOICES.index(selected_option_3) if selected_option_3 else None
+            st.session_state.data_ready_3 = False
+            st.session_state.download_data_3 = None
+
+        # Конфигурация для каждого типа данных
+        download_config_3 = {
+            "Claster map (png)": {
+                "func": save_claster_map,
+                "file_name": f"{os.path.splitext(st.session_state.image_name)[0]}_map.png",
+                "mime": "image/png"
+            },
+            "Claster areas (json)": {
+                "func": save_areas,
+                "file_name": f"{os.path.splitext(st.session_state.image_name)[0]}_areas.json",
+                "mime": "image/png"
+            },
+            "Points data (json)": {
+                "func": save_points,
+                "file_name": f"{os.path.splitext(st.session_state.image_name)[0]}_points.json",
+                "mime": "application/json"
+            },
+            "Full Project (ZIP)": {
+                "func": save_project,
+                "file_name": f"{os.path.splitext(st.session_state.image_name)[0]}_project.zip",
+                "mime": "application/zip"
+            }
+        }
+
+        # Кнопка "Загрузить"
+        if st.session_state.download_option_3 and not st.session_state.data_ready_3:
+            if st.button("Prepare", key="load_button"):
+                config = download_config_3[st.session_state.download_option_3]
+                st.session_state.download_data_3 = {
+                    "data": config["func"](),
+                    "file_name": config["file_name"],
+                    "mime": config["mime"]
+                }
+                st.session_state.data_ready_3 = True
+                st.rerun()
+
+        # Кнопка "Скачать"
+        if st.session_state.data_ready_3:
+            data_info = st.session_state.download_data_3
+            if st.download_button(
+                label="Download",
+                data=data_info["data"],
+                file_name=data_info["file_name"],
+                mime=data_info["mime"],
+                key='download_button'
+            ):
+                # Сброс состояния после скачивания
+                st.session_state.download_option_3 = None
+                st.session_state.download_option_ind_3 = None
+                st.session_state.data_ready_3 = False
+                st.session_state.download_data_3 = None
+                st.rerun()
+
+
+
+
 
 
 # --- RENDER: ОСНОВНОЕ ОКНО --------------------------------------
@@ -234,3 +309,66 @@ def filter_cells_outside_bbox(cells, bbox):
         result.append(cell)
 
     return result
+
+
+
+# --- UTILS: ФУНКЦИИ ДЛЯ СОХРАНЕНИЯ --------------------------------------
+
+def save_claster_map():
+    """Создание изображения с разметкой"""
+    new_image = st.session_state.modified_img.copy()
+
+    img_byte_arr = io.BytesIO()
+    new_image.save(img_byte_arr, format='PNG')
+    img_byte_arr.seek(0)
+    return img_byte_arr
+
+
+
+def compute_cell_areas():
+    """Вычисляет площади для всех ячеек на основе их границ (boundary)"""
+    # Весовая диаграмма Вороного
+    width, height = st.session_state.original_img.size
+    bbox = (0, 0, width, height)
+    points = [(point['x'], point['y']) for point in st.session_state.base_points]
+    weights = [point['weight'] for point in st.session_state.base_points]
+
+    cells = wv.build_apollonius_polygons(points, weights)
+    filtered_cells = filter_cells_outside_bbox(cells, bbox)
+
+    areas = []
+    for cell in filtered_cells:
+        poly_coords = cell.boundary
+        if len(poly_coords) < 3:
+            continue  # not a polygon
+        polygon = Polygon(poly_coords)
+        if polygon.is_valid and not polygon.is_empty:
+            areas.append(polygon.area)
+    return areas
+
+def save_areas():
+    """Создание JSON-файла с площадями кластеров и морфологическими параметрами"""
+
+    cell_areas = compute_cell_areas()
+
+    points_data = {
+        "image_name": st.session_state.image_name,
+        "image_size": {
+            "width": st.session_state.original_img.size[0],
+            "height": st.session_state.original_img.size[1]
+        },
+        "areas": cell_areas,
+        "areas_count": len(cell_areas),
+        "scale": {
+            "unit": "nanometers",
+            "value_per_pixel": None  # ! можно добавить настройки
+        },
+        "creation_date": datetime.now().strftime("%Y-%m-%d"),
+        "author": "user",  # ! можно добавить настройки
+        "notes": None  # ! можно добавить настройки
+    }
+    
+    json_str = json.dumps(points_data, indent=4) # конвертация в JSON строку
+    json_bytes = io.BytesIO(json_str.encode('utf-8'))
+    json_bytes.seek(0)
+    return json_bytes
