@@ -56,6 +56,13 @@ def init_session_state():
         "current_claster_color": "#0000FF",
         "current_filling_color": "#FFB300",
 
+        "last_handled_coords": None,
+
+        "initial_weight": 0.0,
+        "weight": 25.0,
+        "min_weight": -200.0,
+        "max_weight": 200.0,
+        "weight_step": 5.0,
 
     }
     

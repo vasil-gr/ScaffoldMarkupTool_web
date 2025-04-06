@@ -30,10 +30,10 @@ def render_cluster_sidebar():
 
             col1, col2 = st.columns([6, 3])
             with col1:
-                new_weight = st.slider("Weight", st.session_state.min_scale, st.session_state.max_scale, st.session_state.scale, st.session_state.scale_step, label_visibility="collapsed")
-                # if new_weight != st.session_state.weight:
-                #    st.session_state.weight = new_weight
-                #    st.rerun()
+                new_weight = st.slider("Weight", st.session_state.min_weight, st.session_state.max_weight, st.session_state.weight, st.session_state.weight_step, label_visibility="collapsed")
+                if new_weight != st.session_state.weight:
+                   st.session_state.weight = new_weight
+                   st.rerun()
             with col2:
                 if st.button("Reset", key="W_reset"):
                     pass
@@ -105,7 +105,32 @@ def render_cluster_page():
     # Получаем координаты от клика
     coords = streamlit_image_coordinates(image_resized, key="click_img_with_scroll")
 
+    # Обработка кликов: только если coords новые и впервые в этом рендере (если этого не сделать, то при каждом рендере будет снова обрабатываться клик)
+    if coords and coords != st.session_state.last_handled_coords:
+        # Сохраняем, что эти coords уже отработаны (сохраняем до учёта масштаба)
+        st.session_state.last_handled_coords = coords
 
+        # учёт масштаба
+        x_orig = int(coords["x"] / st.session_state.scale)
+        y_orig = int(coords["y"] / st.session_state.scale)
+
+        # Найдём ближайшую точку в радиусе
+        radius = 100
+        if st.session_state.base_points:
+            nearest_point = None
+            nearest_dist_sq = radius ** 2 + 1  # чуть больше максимума
+            for point in st.session_state.base_points:
+                # Извлекаем координаты и проверяем расстояние
+                x, y = point['x'], point['y']
+                dist_sq = (x - x_orig) ** 2 + (y - y_orig) ** 2
+                if dist_sq <= radius ** 2 and dist_sq < nearest_dist_sq:
+                    nearest_dist_sq = dist_sq
+                    nearest_point = point
+
+            # Если нашли, присвоим ей вес
+            if nearest_point:
+                nearest_point['weight'] = st.session_state.weight
+                st.rerun()
 
     
     st.write(st.session_state.base_points)
@@ -140,7 +165,7 @@ def create_modified_image():
                 )
     
     # Если Map вкл - рисуем кластеры
-    if st.session_state.get('show_clasters', True) and len(st.session_state.base_points)>0:
+    if st.session_state.get('show_clasters', True) and st.session_state.base_points is not None:
 
         # Весовая диаграмма Вороного
         width, height = st.session_state.original_img.size
