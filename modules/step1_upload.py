@@ -190,7 +190,7 @@ def calculate_safe_scale(original_width):
     if original_width <= st.session_state.display_width:
         initial_scale = 1.0
     else:
-        scale_factor = st.session_state.display_width / original_width
+        scale_factor = st.session_state.display_width / original_width * 0.75
         initial_scale = math.floor(scale_factor / st.session_state.scale_step) * st.session_state.scale_step
         initial_scale = round(initial_scale, 2)
     

@@ -1,5 +1,5 @@
 import streamlit as st
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 from shapely.geometry import Polygon, box
 
@@ -66,15 +66,14 @@ def render_cluster_sidebar():
 
             col5, col6 = st.columns([2, 2])
             with col5:
-                st.session_state.show_img = st.toggle("Img", st.session_state.show_img)
-                st.session_state.show_clasters = st.toggle("Clasters", st.session_state.show_clasters)                      
+                # if st.session_state.step2_img_render:
+                st.toggle("Img", True, key="show_img")
+                st.toggle("Clasters", True, key="show_clasters")
+                st.color_picker("Clasters", "#0000FF", key="current_claster_color")
             with col6:
-                st.session_state.show_dots = st.toggle("Dots", st.session_state.show_dots)
-                st.session_state.show_filling = st.toggle("Filling", st.session_state.show_filling, disabled=not st.session_state.show_clasters)
-
-            if st.button("Create map", key="create_map"):
-                st.session_state.modified_img = create_modified_image()
-                st.rerun()
+                st.toggle("Dots", True, key="show_dots")
+                st.toggle("Filling", False, key="show_filling", disabled=not st.session_state.get("show_clasters", True))
+                st.color_picker("Filling", "#FFB300", key="current_filling_color")
 
 
     # Вкладка "Save"
@@ -90,9 +89,8 @@ def render_cluster_page():
     """Основное окно для шага 3: кластеризация"""
     setup_step2and3_config()  # Настройка отступов и прокрутки
 
-    if st.session_state.step2_img_render:
-        st.session_state.modified_img = create_modified_image()
-        st.session_state.step2_img_render = False
+    # Создание изображения
+    st.session_state.modified_img = create_modified_image()
     display_img = st.session_state.modified_img
 
     # Масштабирование изображения
@@ -107,47 +105,7 @@ def render_cluster_page():
     st.write(st.session_state.base_points)
 
 
-    points = [
-        (1.39, 0.25), (2.75, 2.23), (1.36, 1.77), (1.92, 0.87), (0.88, 0.22),
-        (0.11, 1.83), (3.35, 1.12), (1.05, 1.08), (3.33, 1.04), (3.76, 1.05),
-        (1.47, 2.34), (0.01, 1.67), (2.23, 2.77), (1.65, 1.50), (1.91, 0.19),
-        (0.98, 0.24), (0.28, 2.84), (2.65, 1.34), (0.45, 2.29), (3.40, 3.40),
-        (2.41, 0.75), (3.00, 3.22), (2.59, 2.59), (1.18, 0.07), (1.52, 2.07)
-    ]
-
-    bbox = (0, 0, 4, 3.6)
-
-    weights = [
-        0.0, 0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, -0.08, 0.0, 0.0,
-        -0.06, 0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, -0.1, 0.0,
-        0.0, 0.0, 0.04, 0.0, -0.06
-    ]
-
-    # Note: In general, weights should be constrained (to avoid degenerate behavior).
-    # One way to do this is by estimating the average spacing between points
-    # using the formula: 0.5 * sqrt(w * h / N), where w and h are the bounding box dimensions and N is the number of points.
-    # For example, here: k = 0.5 * sqrt(4 * 3.5 / 28) ≈ 0.37
-    # Then, we can limit the weights to the range (-a*k, +a*k),
-    # where a is a user-defined coefficient (chosen experimentally).
-    # Setting weight = 0 gives a standard Voronoi diagram.
-
-    # All bounded faces
-    cells = wv.build_apollonius_polygons(points, weights)
-    st.write(len(cells))
-
-    # Filtering with bbox
-    filtered_cells = filter_cells_outside_bbox(cells, bbox)
-    st.write(len(filtered_cells))
-
-    # Results
-    for c in filtered_cells:
-        st.write(f"Cell {c.index}, boundary={c.boundary}")
-
-
-
-
+    
 # --- UTILS: НАСТРОЙКА ИЗОБРАЖЕНИЯ --------------------------------------
 
 def create_modified_image():
@@ -158,6 +116,8 @@ def create_modified_image():
     if not st.session_state.get('show_img', True):
         gray_img = Image.new('RGB', img.size, (128, 128, 128))
         img = gray_img
+    
+    draw = ImageDraw.Draw(img)
     
     # Если Dots вкл - рисуем точки
     if st.session_state.get('show_dots', True):
@@ -174,8 +134,39 @@ def create_modified_image():
                 )
     
     # Если Map вкл - рисуем кластеры
-    if st.session_state.get('show_clasters', True):
-        pass
+    if st.session_state.get('show_clasters', True) and len(st.session_state.base_points)>0:
+
+        # Весовая диаграмма Вороного
+        width, height = st.session_state.original_img.size
+        bbox = (0, 0, width, height)
+        points = [(point['x'], point['y']) for point in st.session_state.base_points]
+        weights = [point['weight'] for point in st.session_state.base_points]
+
+        cells = wv.build_apollonius_polygons(points, weights)
+        filtered_cells = filter_cells_outside_bbox(cells, bbox)
+
+        # Рисуем многоугольники (ячейки) – линии синего цвета
+        for cell in filtered_cells:
+            poly = cell.boundary
+            if not poly or len(poly) < 3:
+                continue
+            # Если многоугольник не замкнут, замыкаем его
+            if poly[0] != poly[-1]:
+                poly = poly + [poly[0]]
+            # Рисуем линии по всем точкам
+            draw.line(poly, fill=st.session_state.current_claster_color, width=3)
+        
+        # Рисуем подписи для точек с ненулевыми весами
+        if weights is not None and len(weights) == len(points):
+            try:
+                m = int(width/80/2)
+                font = ImageFont.truetype("arial.ttf", m*2)
+            except:
+                font = ImageFont.load_default()
+            for (px, py), w in zip(points, weights):
+                if abs(w) > 1e-9:
+                    text = f"{w:+.2f}"
+                    draw.text((px + m, py - m), text, fill="black", font=font)
 
     # Если Filling вкл - рисуем заливку
     if st.session_state.get('show_filling', True):
@@ -185,14 +176,9 @@ def create_modified_image():
 
 
 
-
-
-
 def filter_cells_outside_bbox(cells, bbox):
     """
-    Returns a new list of Voronoi cells whose polygons are COMPLETELY
-    contained within the bounding box [minx, maxx] x [miny, maxy].
-    If a polygon goes outside the box, it is skipped and not returned.
+    Обрезка диаграмы Вороного рамкой
     """
     result = []
     minx, miny, maxx, maxy = bbox

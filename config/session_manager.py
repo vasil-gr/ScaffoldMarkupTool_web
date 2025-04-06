@@ -50,8 +50,11 @@ def init_session_state():
         # Инициализация состояний переключателей на шаге 3
         "show_img": True,
         "show_dots": True,
-        "show_clasters": False,
+        "show_clasters": True,
         "show_filling": False,
+
+        "current_claster_color": "#0000FF",
+        "current_filling_color": "#FFB300",
 
 
     }
