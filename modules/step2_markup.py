@@ -217,6 +217,7 @@ def render_markup_page():
                 new_base_points.append({
                     'x': base_x,
                     'y': base_y,
+                    'weight': 0.0,
                     'size': base_size,
                     'color': color
                 })
@@ -324,6 +325,7 @@ def get_scaled_points():
         {
             'x': point['x'] * st.session_state.scale,
             'y': point['y'] * st.session_state.scale,
+            'weight': point['weight'],
             'size': point['size'] * st.session_state.scale,
             'color': f"{point['color']}B3"  # фиксированная прозрачность 0.7 (B3 в hex)
         }

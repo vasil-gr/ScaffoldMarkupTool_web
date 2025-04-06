@@ -17,7 +17,7 @@ def init_session_state():
         "original_img": None,
         "image_name": None,
         "step": 1, # режимы (3)
-        "base_points": None, # {'x', 'y', 'size', 'color'}
+        "base_points": None, # {'x', 'y', 'weight', 'size', 'color'}
         "canvas_data": None,
         "mode": "draw",
         "current_point_size": INITIAL_POINT_SIZE,

@@ -165,12 +165,13 @@ def load_points_from_json(zip_file):
         # Валидация точек
         valid_points = []
         for point in json_data['points']:
-            if not all(k in point for k in ['x', 'y', 'size', 'color']):
+            if not all(k in point for k in ['x', 'y', 'weight', 'size', 'color']):
                 continue
             try:
                 valid_points.append({
                     'x': float(point['x']),
                     'y': float(point['y']),
+                    'weight': float(point['weight']),
                     'size': float(point['size']),
                     'color': point['color']
                 })
