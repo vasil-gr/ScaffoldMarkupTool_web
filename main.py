@@ -15,14 +15,25 @@ def next_step():
         return
     else:
         st.session_state.step += 1
-        st.session_state.step2_img_render = True
+        
+        if st.session_state.step == 2 and not st.session_state.step2_img_render:
+            # Если это первый рендер на шаге 2, то инициализируем данные точек, если их нет
+            if st.session_state.base_points is None:
+                st.session_state.base_points = []
+            st.session_state.step2_img_render = True
 
 
 def back_step():
     """Обработка кнопки Back"""
     if st.session_state.step == 3:
         st.session_state.step -= 1
-        st.session_state.step2_initial_render = True
+        
+        if st.session_state.step == 2:
+            st.session_state.step2_initial_render = True
+
+            # Если base_points нет, инициализируем пустой список
+            if st.session_state.base_points is None:
+                st.session_state.base_points = []
 
 
 def restart():

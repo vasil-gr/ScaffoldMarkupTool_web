@@ -163,7 +163,7 @@ def render_markup_sidebar():
 
 def render_markup_page():
     """Основное окно для шага 2: разметка изображения точками"""
-    setup_step2and3_config() # конфигурация страницы (втч горизонатальная полоса прокрутки)
+    setup_step2and3_config() # конфигурация страницы (втч горизонтальная полоса прокрутки)
 
     # Масштабирование изображения
     scaled_width = int(st.session_state.original_img.size[0] * st.session_state.scale)
@@ -172,14 +172,13 @@ def render_markup_page():
     # динамически адаптируем размер холста под размер изображения (в зависимости от его масштаба)
     setup_step2and3_config_frame(scaled_width)
 
-    # Загрузка точек на холст (для случая загрузки пользователем проекта)
+    # Загрузка точек на холст (для случая загрузки пользователем проекта) и проверка на пустоту base_points (чтобы не перезаписать данные при возврате на шаг 2)
     if st.session_state.step2_initial_render:
-        if st.session_state.base_points is not None:
-            st.session_state.canvas_data = generate_canvas_data()
-        else:
-            st.session_state.canvas_data = {"version": "4.6.0", "objects": []}
+        if st.session_state.base_points is None:
+            st.session_state.base_points = []
+        st.session_state.canvas_data = generate_canvas_data()
         st.session_state.step2_initial_render = False
-    
+
     # Холст
     canvas_result = st_canvas(
         fill_color=st.session_state.current_point_color + "B3",
@@ -213,16 +212,27 @@ def render_markup_page():
                 base_y = center_y / st.session_state.scale
                 base_size = obj["radius"] / st.session_state.scale
                 color = obj["fill"][:7] if obj["fill"].startswith('#') else "#FF0000"  # цвет без прозрачности
-                
-                new_base_points.append({
-                    'x': base_x,
-                    'y': base_y,
-                    'weight': 0.0,
-                    'size': base_size,
-                    'color': color
-                })
-        
-        if new_base_points != st.session_state.base_points:
+
+                # Проверяем, существует ли уже точка с такими координатами
+                existing_point = next(
+                    (point for point in st.session_state.base_points if abs(point['x'] - base_x) < 1e-3 and abs(point['y'] - base_y) < 1e-3),
+                    None
+                )
+
+                if existing_point is None:
+                    new_base_points.append({
+                        'x': base_x,
+                        'y': base_y,
+                        'weight': 0.0,  # если точка новая, добавляем её с нулевым весом
+                        'size': base_size,
+                        'color': color
+                    })
+                else:
+                    # Если точка существует, просто сохраняем её с текущим весом
+                    new_base_points.append(existing_point)
+
+        # Перезаписываем base_points только если были добавлены или изменены точки
+        if new_base_points != st.session_state.base_points and new_base_points != []: # "and new_base_points != []" - временное решение для защиты от багов canvas (иногда он внезапно возвращает пустой json)
             st.session_state.base_points = new_base_points
             st.rerun()
 
