@@ -66,6 +66,8 @@ def init_session_state():
         "last_handled_coords": None,
 
         "initial_weight": 0.0,
+        "mode_3": "draw",
+        "plas_weight": 5.0,
         "weight": 25.0,
         "min_weight": -200.0,
         "max_weight": 200.0,

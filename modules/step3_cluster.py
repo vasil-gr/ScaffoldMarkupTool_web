@@ -33,12 +33,26 @@ def render_cluster_sidebar():
         with weight_container:
             st.markdown("**▸ Weight**")
 
+            # Выбор режима редактирования веса
+            st.session_state.mode_3 = st.radio(
+                "Choose editing mode",
+                ["Set exact weight", "Increment by value"],
+                horizontal=True, 
+                label_visibility="collapsed"
+            )
+
+
             col1, col2 = st.columns([6, 3])
             with col1:
-                new_weight = st.slider("Weight", st.session_state.min_weight, st.session_state.max_weight, st.session_state.weight, st.session_state.weight_step, label_visibility="collapsed")
-                if new_weight != st.session_state.weight:
-                   st.session_state.weight = new_weight
-                   st.rerun()
+                if st.session_state.mode_3 == "Set exact weight":
+                    new_weight = st.slider("Weight", st.session_state.min_weight, st.session_state.max_weight, st.session_state.weight, st.session_state.weight_step, label_visibility="collapsed")
+                    if new_weight != st.session_state.weight:
+                        st.session_state.weight = new_weight
+                        st.rerun()
+                if st.session_state.mode_3 == "Increment by value":
+                    st.number_input("Weight", min_value=-30.0, max_value=30.0, value=st.session_state.plas_weight, step=st.session_state.weight_step, key="plas_weight", label_visibility="collapsed")
+
+
             with col2:
                 if st.button("Reset", key="W_reset"):
                     pass
@@ -204,8 +218,12 @@ def render_cluster_page():
 
             # Если нашли, присвоим ей вес
             if nearest_point:
-                nearest_point['weight'] = st.session_state.weight
-                st.rerun()
+                if st.session_state.mode_3 == "Set exact weight":
+                    nearest_point['weight'] = st.session_state.weight
+                    st.rerun()
+                elif st.session_state.mode_3 == "Increment by value":
+                    nearest_point['weight'] += st.session_state.plas_weight
+                    st.rerun()                 
 
     
     st.write(st.session_state.base_points)
