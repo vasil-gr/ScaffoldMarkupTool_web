@@ -50,7 +50,7 @@ def render_cluster_sidebar():
                         st.session_state.weight = new_weight
                         st.rerun()
                 if st.session_state.mode_3 == "Increment by value":
-                    st.number_input("Weight", min_value=-30.0, max_value=30.0, value=st.session_state.plas_weight, step=st.session_state.weight_step, key="plas_weight", label_visibility="collapsed")
+                    st.number_input("Weight", min_value=-100.0, max_value=100.0, value=st.session_state.plas_weight, step=st.session_state.weight_step, key="plas_weight", label_visibility="collapsed")
 
 
             with col2:
@@ -95,6 +95,36 @@ def render_cluster_sidebar():
                 st.toggle("Filling", False, key="show_filling", disabled=not st.session_state.get("show_clasters", True))
                 st.color_picker("Filling", "#FFB300", key="current_filling_color")
 
+    # Вкладка "Bounding box"
+    with st.expander("**Bounding box**", expanded=False):
+        box_container = st.container()
+        with box_container:  
+
+            width, height = map(float, st.session_state.original_img.size)
+
+            col7, col8 = st.columns([2, 2])
+            with col7:
+                new_box_x_min = st.number_input("X min", min_value=0.0, max_value=width, value=st.session_state.box_x_min, step=50.0)
+                if new_box_x_min != st.session_state.box_x_min:
+                    st.session_state.box_x_min = new_box_x_min
+                    st.rerun()
+
+                new_box_y_min = st.number_input("Y min", min_value=0.0, max_value=height, value=st.session_state.box_y_min, step=50.0)
+                if new_box_y_min != st.session_state.box_y_min:
+                    st.session_state.box_y_min = new_box_y_min
+                    st.rerun()
+                
+            with col8:
+
+                new_box_w = st.number_input("W", min_value=0.0, max_value=width, value=st.session_state.box_w, step=50.0)
+                if new_box_w != st.session_state.box_w:
+                    st.session_state.box_w = new_box_w
+                    st.rerun()
+
+                new_box_h = st.number_input("H", min_value=0.0, max_value=height, value=st.session_state.box_h, step=50.0)
+                if new_box_h != st.session_state.box_h:
+                    st.session_state.box_h = new_box_h
+                    st.rerun()
 
     # Вкладка "Save"
     with st.expander("**Save**", expanded=False):
@@ -225,9 +255,6 @@ def render_cluster_page():
                     nearest_point['weight'] += st.session_state.plas_weight
                     st.rerun()                 
 
-    
-    st.write(st.session_state.base_points)
-
 
     
 # --- UTILS: НАСТРОЙКА ИЗОБРАЖЕНИЯ --------------------------------------
@@ -261,8 +288,13 @@ def create_modified_image():
     if st.session_state.get('show_clasters', True) and st.session_state.base_points is not None:
 
         # Весовая диаграмма Вороного
-        width, height = st.session_state.original_img.size
-        bbox = (0, 0, width, height)
+        width, _ = st.session_state.original_img.size
+
+        bbox = (st.session_state.box_x_min, 
+                st.session_state.box_y_min, 
+                st.session_state.box_x_min + st.session_state.box_w, 
+                st.session_state.box_y_min + st.session_state.box_h)
+        
         points = [(point['x'], point['y']) for point in st.session_state.base_points]
         weights = [point['weight'] for point in st.session_state.base_points]
 
@@ -291,6 +323,39 @@ def create_modified_image():
                 if abs(w) > 1e-9:
                     text = f"{w:+.2f}"
                     draw.text((px + m, py - m), text, fill="black", font=font)
+
+        # Рисуем пунктирную рамку bbox — прямоугольник с границами
+
+
+        def draw_dashed_line(start, end):
+            """Рисует пунктир от start до end"""
+            dash = 10  # длина одного штриха
+            gap = 5    # длина пробела между штрихами
+            color = "black"
+            width = 2
+
+
+            total_len = ((end[0]-start[0])**2 + (end[1]-start[1])**2)**0.5
+            dx = end[0] - start[0]
+            dy = end[1] - start[1]
+            direction = (dx / total_len, dy / total_len)
+            n = int(total_len // (dash + gap))
+            for i in range(n + 1):
+                x0 = start[0] + (dash + gap) * i * direction[0]
+                y0 = start[1] + (dash + gap) * i * direction[1]
+                x1 = x0 + dash * direction[0]
+                y1 = y0 + dash * direction[1]
+                if (x1 - start[0])**2 + (y1 - start[1])**2 <= total_len**2:
+                    draw.line([(x0, y0), (x1, y1)], fill=color, width=width)
+
+        # Четыре стороны bbox
+        draw_dashed_line((bbox[0], bbox[1]), (bbox[2], bbox[1]))  # верх
+        draw_dashed_line((bbox[2], bbox[1]), (bbox[2], bbox[3]))  # правый
+        draw_dashed_line((bbox[2], bbox[3]), (bbox[0], bbox[3]))  # низ
+        draw_dashed_line((bbox[0], bbox[3]), (bbox[0], bbox[1]))  # левый
+
+
+
 
     # Если Filling вкл - рисуем заливку
     if st.session_state.get('show_filling', True):
@@ -347,7 +412,12 @@ def compute_cell_areas():
     """Вычисляет площади для всех ячеек на основе их границ (boundary)"""
     # Весовая диаграмма Вороного
     width, height = st.session_state.original_img.size
-    bbox = (0, 0, width, height)
+    
+    bbox = (st.session_state.box_x_min, 
+            st.session_state.box_y_min, 
+            st.session_state.box_x_min + st.session_state.box_w, 
+            st.session_state.box_y_min + st.session_state.box_h)
+    
     points = [(point['x'], point['y']) for point in st.session_state.base_points]
     weights = [point['weight'] for point in st.session_state.base_points]
 
@@ -374,6 +444,12 @@ def save_areas():
         "image_size": {
             "width": st.session_state.original_img.size[0],
             "height": st.session_state.original_img.size[1]
+        },
+        "bbox_size": {
+            "x_min": st.session_state.box_x_min,
+            "y_min": st.session_state.box_y_min,
+            "w": st.session_state.box_w,
+            "h": st.session_state.box_h,
         },
         "areas": cell_areas,
         "areas_count": len(cell_areas),

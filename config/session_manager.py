@@ -67,11 +67,16 @@ def init_session_state():
 
         "initial_weight": 0.0,
         "mode_3": "draw",
-        "plas_weight": 5.0,
-        "weight": 25.0,
+        "plas_weight": -30.0,
+        "weight": -50.0,
         "min_weight": -200.0,
         "max_weight": 200.0,
-        "weight_step": 5.0,
+        "weight_step": 10.0,
+
+        "box_x_min": 0.0,
+        "box_y_min": 0.0,
+        "box_w": 2560.0,
+        "box_h": 1920.0,
 
     }
     

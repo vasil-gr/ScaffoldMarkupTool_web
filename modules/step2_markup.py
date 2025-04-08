@@ -237,14 +237,6 @@ def render_markup_page():
             st.rerun()
 
 
-    # Отображение информации
-    st.subheader("Текущее состояние")
-    st.write(f"Масштаб: {st.session_state.scale}")
-    st.write("Текущий размер точки:", st.session_state.current_point_size)
-    st.write("Текущий цвет точки:", st.session_state.current_point_color)
-    st.write("Базовые точки:", st.session_state.base_points)
-
-
 
 
 

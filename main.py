@@ -49,6 +49,8 @@ def main():
     """Точка входа в приложение"""
     setup_page_config() # css и пр
     init_session_state() # инициализация переменных
+
+    # st.logo("logo.png", size = "large", icon_image=None)
     
     # Боковая панель
     if st.session_state.sidebar_state == "expanded":
