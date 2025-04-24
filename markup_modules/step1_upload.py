@@ -71,8 +71,7 @@ def render_upload_page():
     """Основное окно для шага 1: загрузка данных (изображения или архива)"""
     setup_step1_config()
 
-    st.write("### Scaffold Markup Tool")
-    st.write("Here you can read how to work in the program: [Help](#)")  # ! тут будет ссылка
+    st.markdown("##### Uploading data:")
     
     if st.session_state.get('original_img'):
         if st.session_state.base_points is not None:
@@ -88,7 +87,6 @@ def render_upload_page():
         st.info("ℹ️ Please upload data using the sidebar")
 
         st.markdown("""
-        #### You can upload:
         1. **Single Image**  
         - Formats: PNG, JPG, JPEG, BMP, GIF, TIFF  
         - Recommended size: 250-2500 px (larger images will be compressed)  

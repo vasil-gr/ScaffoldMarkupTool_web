@@ -3,11 +3,11 @@ import streamlit as st
 
 # --- ОБЩАЯ НАСТРОЙКА СТРАНИЦЫ ---------------------------------------
 
-def setup_page_config():
+def setup_page_config(title, icon):
     """Настройка глобальных параметров страницы"""
     st.set_page_config(
-        page_title="ScaffoldMarkupTool",
-        page_icon="✏️",
+        page_title= title,
+        page_icon= icon,
         layout="wide",
     )
 

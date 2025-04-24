@@ -9,7 +9,7 @@ from datetime import datetime
 from shapely.geometry import Polygon, box
 
 from config.styles import setup_step2and3_config, setup_step2and3_config_frame
-from modules.step2_markup import save_points, save_project
+from markup_modules.step2_markup import save_points, save_project
 from voronoi import weighted_voronoi as wv
 
 
