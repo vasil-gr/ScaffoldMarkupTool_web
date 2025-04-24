@@ -17,7 +17,7 @@ def init_session_state():
         "original_img": None,
         "image_name": None,
         "step": 1, # режимы (3)
-        "base_points": None, # {'x', 'y', 'size', 'color'}
+        "base_points": None, # {'x', 'y', 'weight', 'size', 'color'}
         "canvas_data": None,
         "mode": "draw",
         "current_point_size": INITIAL_POINT_SIZE,
@@ -40,10 +40,44 @@ def init_session_state():
         "data_ready": False,
         "download_data": None,
 
+        # Инициализация download_option_3 - вариант скачивания на третьем шаге
+        "download_option_3": None,
+        "download_option_ind_3": None,
+        "data_ready_3": False,
+        "download_data_3": None,
+
         # Инициализация флага первого рендера на шаге 2
         "step2_initial_render": True,
+        "step2_img_render": True,
         # счётчик перерисовок (при нажатии кнопки "Clear"), нужен чтобы обновлять canvas
         "redraw_id": 0,
+        # Инициация перехода на шаг 3 для прорисовки изобаржения
+        "step3_img_render": True,
+
+        # Инициализация состояний переключателей на шаге 3
+        "show_img": True,
+        "show_dots": True,
+        "show_clasters": True,
+        "show_filling": False,
+
+        "current_claster_color": "#0000FF",
+        "current_filling_color": "#FFB300",
+
+        "last_handled_coords": None,
+
+        "initial_weight": 0.0,
+        "mode_3": "draw",
+        "plas_weight": -30.0,
+        "weight": -50.0,
+        "min_weight": -200.0,
+        "max_weight": 200.0,
+        "weight_step": 10.0,
+
+        "box_x_min": 0.0,
+        "box_y_min": 0.0,
+        "box_w": 2560.0,
+        "box_h": 1920.0,
+
     }
     
     for key, value in defaults.items():

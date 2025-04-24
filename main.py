@@ -15,14 +15,25 @@ def next_step():
         return
     else:
         st.session_state.step += 1
+        
+        if st.session_state.step == 2 and not st.session_state.step2_img_render:
+            # Если это первый рендер на шаге 2, то инициализируем данные точек, если их нет
+            if st.session_state.base_points is None:
+                st.session_state.base_points = []
+            st.session_state.step2_img_render = True
 
 
 def back_step():
     """Обработка кнопки Back"""
-    if st.session_state.step == 2: # когда это нужно: пользователь загружает проект с точками, шаг 1 -> шаг 2 -> шаг 1 -> шаг 2 -> точки должны перерисовываться
-        st.session_state.step2_initial_render = True
-    if st.session_state.step > 1:
+    if st.session_state.step == 3:
         st.session_state.step -= 1
+        
+        if st.session_state.step == 2:
+            st.session_state.step2_initial_render = True
+
+            # Если base_points нет, инициализируем пустой список
+            if st.session_state.base_points is None:
+                st.session_state.base_points = []
 
 
 def restart():
@@ -38,6 +49,8 @@ def main():
     """Точка входа в приложение"""
     setup_page_config() # css и пр
     init_session_state() # инициализация переменных
+
+    # st.logo("logo.png", size = "large", icon_image=None)
     
     # Боковая панель
     if st.session_state.sidebar_state == "expanded":
@@ -55,7 +68,7 @@ def main():
             with col1:
                 st.button("Restart", on_click=restart, disabled=st.session_state.step == 1)
             with col2:
-                st.button("Back", on_click=back_step, disabled=st.session_state.step == 1)
+                st.button("Back", on_click=back_step, disabled=st.session_state.step != 3)
             with col3:
                 st.button("Next", on_click=next_step, disabled=((st.session_state.step == 1 and st.session_state.original_img is None) or (st.session_state.step == 3)))
 

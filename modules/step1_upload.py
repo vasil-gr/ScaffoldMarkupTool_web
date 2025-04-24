@@ -165,12 +165,13 @@ def load_points_from_json(zip_file):
         # Валидация точек
         valid_points = []
         for point in json_data['points']:
-            if not all(k in point for k in ['x', 'y', 'size', 'color']):
+            if not all(k in point for k in ['x', 'y', 'weight', 'size', 'color']):
                 continue
             try:
                 valid_points.append({
                     'x': float(point['x']),
                     'y': float(point['y']),
+                    'weight': float(point['weight']),
                     'size': float(point['size']),
                     'color': point['color']
                 })
@@ -189,7 +190,7 @@ def calculate_safe_scale(original_width):
     if original_width <= st.session_state.display_width:
         initial_scale = 1.0
     else:
-        scale_factor = st.session_state.display_width / original_width
+        scale_factor = st.session_state.display_width / original_width * 0.75
         initial_scale = math.floor(scale_factor / st.session_state.scale_step) * st.session_state.scale_step
         initial_scale = round(initial_scale, 2)
     

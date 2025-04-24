@@ -1,6 +1,5 @@
 import streamlit as st
-from config.styles import setup_step2_config, setup_step2_config_frame
-import math
+from config.styles import setup_step2and3_config, setup_step2and3_config_frame
 
 from streamlit_drawable_canvas import st_canvas
 from PIL import Image, ImageDraw
@@ -109,12 +108,12 @@ def render_markup_sidebar():
         download_config = {
             "Marked image (png)": {
                 "func": create_marked_image,
-                "file_name": f"{st.session_state.image_name}_img+mark.png",
+                "file_name": f"{os.path.splitext(st.session_state.image_name)[0]}_img+mark.png",
                 "mime": "image/png"
             },
             "Markup only (png)": {
                 "func": create_markup_only,
-                "file_name": f"{st.session_state.image_name}_mark.png",
+                "file_name": f"{os.path.splitext(st.session_state.image_name)[0]}_mark.png",
                 "mime": "image/png"
             },
             "Points data (json)": {
@@ -164,21 +163,20 @@ def render_markup_sidebar():
 
 def render_markup_page():
     """Основное окно для шага 2: разметка изображения точками"""
-    setup_step2_config() # конфигурация страницы (втч горизонатальная полоса прокрутки)
+    setup_step2and3_config() # конфигурация страницы (втч горизонтальная полоса прокрутки)
 
     # Масштабирование изображения
     scaled_width = int(st.session_state.original_img.size[0] * st.session_state.scale)
     scaled_height = int(st.session_state.original_img.size[1] * st.session_state.scale)
 
     # динамически адаптируем размер холста под размер изображения (в зависимости от его масштаба)
-    setup_step2_config_frame(scaled_width)
+    setup_step2and3_config_frame(scaled_width)
 
-    # Загрузка точек на холст (для случая загрузки пользователем проекта)
+    # Загрузка точек на холст (для случая загрузки пользователем проекта) и проверка на пустоту base_points (чтобы не перезаписать данные при возврате на шаг 2)
     if st.session_state.step2_initial_render:
-        if st.session_state.base_points is not None:
-            st.session_state.canvas_data = generate_canvas_data()
-        else:
-            st.session_state.canvas_data = {"version": "4.6.0", "objects": []}
+        if st.session_state.base_points is None:
+            st.session_state.base_points = []
+        st.session_state.canvas_data = generate_canvas_data()
         st.session_state.step2_initial_render = False
 
     # Холст
@@ -214,25 +212,29 @@ def render_markup_page():
                 base_y = center_y / st.session_state.scale
                 base_size = obj["radius"] / st.session_state.scale
                 color = obj["fill"][:7] if obj["fill"].startswith('#') else "#FF0000"  # цвет без прозрачности
-                
-                new_base_points.append({
-                    'x': base_x,
-                    'y': base_y,
-                    'size': base_size,
-                    'color': color
-                })
-        
-        if new_base_points != st.session_state.base_points:
+
+                # Проверяем, существует ли уже точка с такими координатами
+                existing_point = next(
+                    (point for point in st.session_state.base_points if abs(point['x'] - base_x) < 1e-3 and abs(point['y'] - base_y) < 1e-3),
+                    None
+                )
+
+                if existing_point is None:
+                    new_base_points.append({
+                        'x': base_x,
+                        'y': base_y,
+                        'weight': 0.0,  # если точка новая, добавляем её с нулевым весом
+                        'size': base_size,
+                        'color': color
+                    })
+                else:
+                    # Если точка существует, просто сохраняем её с текущим весом
+                    new_base_points.append(existing_point)
+
+        # Перезаписываем base_points только если были добавлены или изменены точки
+        if new_base_points != st.session_state.base_points and new_base_points != []: # "and new_base_points != []" - временное решение для защиты от багов canvas (иногда он внезапно возвращает пустой json)
             st.session_state.base_points = new_base_points
             st.rerun()
-
-
-    # Отображение информации
-    st.subheader("Текущее состояние")
-    st.write(f"Масштаб: {st.session_state.scale}")
-    st.write("Текущий размер точки:", st.session_state.current_point_size)
-    st.write("Текущий цвет точки:", st.session_state.current_point_color)
-    st.write("Базовые точки:", st.session_state.base_points)
 
 
 
@@ -306,11 +308,11 @@ def save_project():
         img_byte_arr = io.BytesIO()
         st.session_state.original_img.save(img_byte_arr, format='PNG')
         img_byte_arr.seek(0)
-        zipf.writestr(f"{st.session_state.image_name}.png", img_byte_arr.getvalue())
+        zipf.writestr(f"{os.path.splitext(st.session_state.image_name)[0]}.png", img_byte_arr.getvalue())
         
         # 2. Добавляем JSON с точками
         json_data = save_points()
-        zipf.writestr(f"{st.session_state.image_name}_points.json", json_data.getvalue())
+        zipf.writestr(f"{os.path.splitext(st.session_state.image_name)[0]}_points.json", json_data.getvalue())
     
     zip_buffer.seek(0)
     return zip_buffer
@@ -325,6 +327,7 @@ def get_scaled_points():
         {
             'x': point['x'] * st.session_state.scale,
             'y': point['y'] * st.session_state.scale,
+            'weight': point['weight'],
             'size': point['size'] * st.session_state.scale,
             'color': f"{point['color']}B3"  # фиксированная прозрачность 0.7 (B3 в hex)
         }
