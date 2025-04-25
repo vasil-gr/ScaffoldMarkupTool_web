@@ -295,6 +295,13 @@ def render_result_page():
 
         df = pd.DataFrame(table_rows)
 
+        # --- FIX: приведение "Size" и "Bbox size" к строковому виду ---
+        if "Size" in df.columns:
+            df["Size"] = df["Size"].apply(lambda x: f"({x[0]}, {x[1]})" if isinstance(x, tuple) else x)
+        if "Bbox size" in df.columns:
+            df["Bbox size"] = df["Bbox size"].apply(lambda x: f"(({x[0][0]}, {x[0][1]}), ({x[1][0]}, {x[1][1]}))" if isinstance(x, tuple) else x)
+
+
         st.subheader("Parameters")
         st.dataframe(df, use_container_width=True)
 
