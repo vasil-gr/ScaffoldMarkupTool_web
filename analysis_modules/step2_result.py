@@ -166,7 +166,9 @@ def render_result_page():
                     selected_index = image_names.index(selected_image)
                     areas = st.session_state.data["areas"][selected_index]
 
-
+                # Отрисовка гистограммы
+                fig = plot_area_histogram(areas, st.session_state.bins, title=f"Histogram of cluster area for {selected_image}", label=selected_image, S_min=st.session_state.S_min, S_max=st.session_state.S_max)
+                st.pyplot(fig)
 
 
             elif st.session_state.histograms == "2 histograms":
@@ -188,7 +190,9 @@ def render_result_page():
                     selected_index_2_2 = image_names.index(selected_image_2_2)
                     areas_2_2 = st.session_state.data["areas"][selected_index_2_2]
 
-
+                # Отрисовка гистограммы
+                fig = plot_area_histogram_2(areas_2_1, areas_2_2, st.session_state.bins, title=f"Histogram of cluster area for {selected_image_2_1} and {selected_image_2_2}", label = (selected_image_2_1, selected_image_2_2), S_min=st.session_state.S_min, S_max=st.session_state.S_max)
+                st.pyplot(fig)
 
 
 
@@ -295,3 +299,112 @@ def render_result_page():
         st.dataframe(df, use_container_width=True)
 
 
+        
+
+
+def plot_area_histogram(areas, bins, title="", label="", bw_adjust=0.3, S_min=0, S_max=300000):
+    """
+    Рисует стилизованную гистограмму с KDE по списку площадей
+    с возможностью ограничения по оси X. Фильтрует данные и
+    обрезает KDE в пределах заданного диапазона.
+    """
+
+    fig = plt.figure(figsize=(8, 4))
+
+    # 1. Фильтрация данных по выбранному диапазону
+    data_in_range = [a for a in areas if S_min <= a <= S_max]
+
+    # 2. Формируем массив «границ бинов»
+    #    Исходя из глобального диапазона (как у тебя было),
+    #    чтобы сохранить общую «ширину» бинов.
+    all_areas = sum(st.session_state.data["areas"], [])
+    bin_width = (max(all_areas) * 1.1) / bins
+    bin_edges = np.arange(S_min, S_max + bin_width, bin_width)
+
+    # 3. Отрисовываем гистограмму + KDE
+    #    - clip=(S_min, S_max) обрезает KDE по границам
+    #    - cut=0 не даёт KDE «вылезать» за крайние точки
+    sns.histplot(
+        data_in_range,
+        bins=bin_edges,
+        stat='density',
+        kde=True,
+        kde_kws={
+            'bw_adjust': bw_adjust,
+            'clip': (S_min, S_max),
+            'cut': 0
+        },
+        label=label
+    )
+
+    plt.xlim(left=S_min, right=S_max)
+    plt.legend()
+    plt.title(title)
+    plt.xlabel('Area')
+    plt.ylabel('Density of probability')
+    plt.grid(True)
+    return fig
+
+
+def plot_area_histogram_2(areas_1, areas_2, bins, title="", label=("", ""), bw_adjust=0.3, S_min=0, S_max=300000):
+    """
+    Рисует стилизованную гистограмму с KDE по списку площадей
+    с возможностью ограничения по оси X. Фильтрует данные и
+    обрезает KDE в пределах заданного диапазона.
+    """
+
+    fig = plt.figure(figsize=(8, 4))
+
+    # 1. Фильтрация данных по выбранному диапазону
+    data_1 = [a for a in areas_1 if S_min <= a <= S_max]
+    data_2 = [a for a in areas_2 if S_min <= a <= S_max]
+
+    # 2. Формируем массив «границ бинов»
+    #    Исходя из глобального диапазона (как у тебя было),
+    #    чтобы сохранить общую «ширину» бинов.
+    all_areas = sum(st.session_state.data["areas"], [])
+    bin_width = (max(all_areas) * 1.1) / bins
+    bin_edges = np.arange(S_min, S_max + bin_width, bin_width)
+
+    label_1, label_2 = label
+
+    # 3. Отрисовываем гистограмму + KDE
+    # Отрисовка первой гистограммы
+    sns.histplot(
+        data_1,
+        bins=bin_edges,
+        stat='density',
+        kde=True,
+        kde_kws={
+            'bw_adjust': bw_adjust,
+            'clip': (S_min, S_max),
+            'cut': 0
+        },
+        label=label_1,
+        color="blue",
+        alpha=0.5
+    )
+
+    # Отрисовка второй гистограммы
+    sns.histplot(
+        data_2,
+        bins=bin_edges,
+        stat='density',
+        kde=True,
+        kde_kws={
+            'bw_adjust': bw_adjust,
+            'clip': (S_min, S_max),
+            'cut': 0
+        },
+        label=label_2,
+        color="orange",
+        alpha=0.5
+    )
+
+    plt.xlim(left=S_min, right=S_max)
+    plt.legend()
+    plt.title(title)
+    plt.xlabel('Area')
+    plt.ylabel('Density of probability')
+    plt.grid(True)
+    return fig
