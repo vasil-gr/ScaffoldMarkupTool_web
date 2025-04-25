@@ -95,11 +95,14 @@ def help_markup():
     You should upload **exactly one file** (either an image or a ZIP archive).
     """)
 
-    with st.expander("📦 Show format examples"):
+    with st.expander("📁 Show format examples"):
         col1, col2, col3 = st.columns(3)
         with col1:
             st.write("**Data unloading widget**")
-            st.image("media/unloading_widget.png", width=300)
+            st.file_uploader(
+                "",
+                type=["png", "jpg", "jpeg", "bmp", "gif", "tiff", "zip"]
+            )
         with col2:
             st.write("**Single image exampl**")
             st.image("media/image_example.jpg", width=300)
@@ -139,7 +142,7 @@ def help_markup():
     - `"Full Project (ZIP)"` – full archive (can be reloaded on Step 1)
     """)
 
-    with st.expander("📦 Show save examples"):
+    with st.expander("💾 Show save examples"):
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.write("**Marked image**")
@@ -229,7 +232,7 @@ def help_markup():
     - `"Full Project (ZIP)"` – full archive (can be reloaded on Step 1)
     """)
 
-    with st.expander("📦 Show save examples"):
+    with st.expander("💾 Show save examples"):
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.write("**Cluster map**")
