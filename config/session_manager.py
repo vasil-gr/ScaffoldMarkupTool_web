@@ -111,3 +111,98 @@ def init_session_state_analysis_app():
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
+
+
+
+
+def clear_session_state(app):
+
+    markup_keys = [
+        "sidebar_state",
+        "original_img",
+        "image_name",
+        "step",
+        "base_points",
+        "canvas_data",
+        "mode",
+        "current_point_size",
+        "current_point_color",
+
+        "initial_scale",
+        "scale",
+        "min_scale",
+        "max_scale",
+
+        # Параметры безопасного масштаба
+        "display_width",
+        "max_width",
+        "min_width",
+        "scale_step",
+
+        # Инициализация download_option - вариант скачивания на втором шаге
+        "download_option",
+        "download_option_ind",
+        "data_ready",
+        "download_data",
+
+        # Инициализация download_option_3 - вариант скачивания на третьем шаге
+        "download_option_3",
+        "download_option_ind_3",
+        "data_ready_3",
+        "download_data_3",
+
+        # Инициализация флага первого рендера на шаге 2
+        "step2_initial_render",
+        "step2_img_render",
+        # счётчик перерисовок (при нажатии кнопки "Clear"), нужен чтобы обновлять canvas
+        "redraw_id",
+        # Инициация перехода на шаг 3 для прорисовки изобаржения
+        "step3_img_render",
+
+        # Инициализация состояний переключателей на шаге 3
+        "show_img",
+        "show_dots",
+        "show_clasters",
+        "show_filling",
+
+        "current_claster_color",
+        "current_filling_color",
+
+        "last_handled_coords",
+
+        "initial_weight",
+        "mode_3",
+        "plas_weight",
+        "weight",
+        "min_weight",
+        "max_weight",
+        "weight_step",
+
+        "box_x_min",
+        "box_y_min",
+        "box_w",
+        "box_h",
+
+        # Help section
+        "section"
+    ]
+
+
+    analysis_keys = [
+        "step_an",
+        "sidebar_state",
+        "data",
+        "data_broken",
+        "view",
+        "histograms",
+        "bins",
+    ]
+
+    if app == 'analysis':
+        for key in analysis_keys:
+            if key in st.session_state:
+                del st.session_state[key]
+    elif app == 'markup':
+        for key in markup_keys:
+            if key in st.session_state:
+                del st.session_state[key]
