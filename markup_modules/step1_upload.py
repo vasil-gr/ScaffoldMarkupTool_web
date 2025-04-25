@@ -71,7 +71,8 @@ def render_upload_page():
     """Основное окно для шага 1: загрузка данных (изображения или архива)"""
     setup_step1_config()
 
-    st.markdown("##### Uploading data:")
+    st.write("### Markup section")
+    st.markdown("On the <u>Help page</u>, you can read instructions on how to use the <u>Markup section</u>", unsafe_allow_html=True)
     
     if st.session_state.get('original_img'):
         if st.session_state.base_points is not None:
@@ -87,6 +88,7 @@ def render_upload_page():
         st.info("ℹ️ Please upload data using the sidebar")
 
         st.markdown("""
+        #### You can upload:
         1. **Single Image**  
         - Formats: PNG, JPG, JPEG, BMP, GIF, TIFF  
         - Recommended size: 250-2500 px (larger images will be compressed)  
@@ -108,7 +110,7 @@ def render_upload_page():
             col1, col2 = st.columns(2)
             with col1:
                 st.write("**Single Image Example**")
-                st.image("image_example.jpg", width=150)
+                st.image("media/image_example.jpg", width=150)
             with col2:
                 st.write("**Project ZIP Contents**")
                 st.code("""

@@ -83,4 +83,4 @@ def markup():
 
 # --- ВХОД ---
 if __name__ == "__page__":
-    scaffold_markup_tool()
+    markup()

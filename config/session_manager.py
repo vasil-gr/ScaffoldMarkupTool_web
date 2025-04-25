@@ -78,6 +78,10 @@ def init_session_state():
         "box_w": 2560.0, # нужно переопределить на пользовательские
         "box_h": 1920.0,
 
+
+        # Help section
+        "section": "About app",
+
     }
     
     for key, value in defaults.items():
