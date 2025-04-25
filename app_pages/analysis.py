@@ -1,5 +1,8 @@
 import streamlit as st
 from config.styles import setup_page_config
+from analysis_modules.step1_upload import render_upload_sidebar, render_upload_page
+from analysis_modules.step2_result import render_result_sidebar, render_result_page
+from config.session_manager import init_session_state_analysis_app
 
 
 # --- КОНТРОЛЬ НАВИГАЦИИ ----------------------------------------
@@ -16,14 +19,14 @@ def restart():
     """Обработка кнопки Restart"""
     st.session_state.step = 1
     st.session_state.clear() # полная очистка всех состояний
-    init_session_state() # повторная инициализация
+    init_session_state_analysis_app() # повторная инициализация
 
 
 
 def analysis():
     """Точка входа в приложение"""
     setup_page_config("Analysis", "📈")
-    init_session_state() # инициализация переменных
+    init_session_state_analysis_app() # инициализация переменных
 
     st.logo("logo.png", size = "large", icon_image=None)
     

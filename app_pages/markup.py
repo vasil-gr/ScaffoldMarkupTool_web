@@ -1,6 +1,6 @@
 import streamlit as st
 
-from config.session_manager import init_session_state
+from config.session_manager import init_session_state_markup_app
 from config.styles import setup_page_config
 from markup_modules.step1_upload import render_upload_sidebar, render_upload_page
 from markup_modules.step2_markup import render_markup_sidebar, render_markup_page
@@ -40,7 +40,7 @@ def restart():
     """Обработка кнопки Restart"""
     st.session_state.step = 1
     st.session_state.clear() # полная очистка всех состояний
-    init_session_state() # повторная инициализация
+    init_session_state_markup_app() # повторная инициализация
 
 
 # --- ТОЧКА ВХОДА ------------------------------------------
@@ -48,7 +48,7 @@ def restart():
 def markup():
     """Точка входа в приложение"""
     setup_page_config("Markup", "✏️")
-    init_session_state() # инициализация переменных
+    init_session_state_markup_app() # инициализация переменных
 
     st.logo("logo.png", size = "large", icon_image=None)
     

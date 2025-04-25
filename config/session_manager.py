@@ -1,6 +1,6 @@
 import streamlit as st
 
-def init_session_state():
+def init_session_state_markup_app():
     """Инициализация переменных"""
 
     # Конфигурация
@@ -88,3 +88,26 @@ def init_session_state():
         if key not in st.session_state:
             st.session_state[key] = value
 
+
+
+def init_session_state_analysis_app():
+    """Инициализация переменных"""
+
+    defaults = {
+        "step_an": 1, # режимы (2)
+        "sidebar_state": "expanded",
+        "data": {                        # валидные данные из файлов
+                "image_names": [],
+                "image_sizes": [],
+                "areas": []
+                },
+        "data_broken": [],            # невалидные данные из файлов
+        "view": "View histograms",
+        "histograms": "General histogram",
+        "bins": 30.0,
+
+    }
+    
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
