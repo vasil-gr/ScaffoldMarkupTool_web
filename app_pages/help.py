@@ -3,7 +3,7 @@ from config.styles import setup_page_config, setup_step1_config
 
 def help():
     setup_page_config("Help", "ℹ️")
-    st.logo("logo.png", size = "large", icon_image=None)
+    st.logo("media/logo.png", size = "large", icon_image=None)
 
     # Боковая панель
     if st.session_state.sidebar_state == "expanded":

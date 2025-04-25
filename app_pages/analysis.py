@@ -28,7 +28,7 @@ def analysis():
     setup_page_config("Analysis", "📈")
     init_session_state_analysis_app() # инициализация переменных
 
-    st.logo("logo.png", size = "large", icon_image=None)
+    st.logo("media/logo.png", size = "large", icon_image=None)
     
     # Боковая панель
     if st.session_state.sidebar_state == "expanded":

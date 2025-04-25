@@ -50,7 +50,7 @@ def markup():
     setup_page_config("Markup", "✏️")
     init_session_state_markup_app() # инициализация переменных
 
-    st.logo("logo.png", size = "large", icon_image=None)
+    st.logo("media/logo.png", size = "large", icon_image=None)
     
     # Боковая панель
     if st.session_state.sidebar_state == "expanded":

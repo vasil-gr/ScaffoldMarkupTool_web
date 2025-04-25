@@ -130,8 +130,8 @@ def render_upload_page():
     """Основное окно для шага 1: загрузка данных (изображения или архива)"""
     setup_step1_config()
 
-    st.write("### Scaffold Markup Tool")
-    st.write("Here you can read how to work in the program: [Help](#)")  # ! тут будет ссылка
+    st.write("### Analysis section")
+    st.markdown("On the <u>Help page</u>, you can read instructions on how to use the <u>Analysis section</u>", unsafe_allow_html=True)
     
 
     # Вывод успешной загрузки
@@ -168,4 +168,4 @@ def render_upload_page():
                 st.markdown(f"- {name}")
     else:
         if not st.session_state.data["image_names"]:
-            st.info("Download JSON-files to start.")
+            st.info("ℹ️ Upload JSON-files using the sidebar to start")
