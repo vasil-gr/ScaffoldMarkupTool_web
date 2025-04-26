@@ -89,19 +89,13 @@ def render_upload_page():
 
         st.markdown("""
         #### You can upload:
-        1. **Single Image**  
-        - Formats: PNG, JPG, JPEG, BMP, GIF, TIFF  
-        - Recommended size: 250-2500 px (larger images will be compressed)  
-        - Starts a new project with blank markup
+        1. **Single Image** 
+        - Formats: PNG, JPG, JPEG, BMP, GIF, TIFF
+        - Recommended size: 250-2500 px
 
-        2. **Project Archive (ZIP)**  
-        - Must contain:  
-            - Exactly one PNG image (unmarked)  
-            - One JSON file with point data  
-        - Opens existing project with:  
-            - The corresponding image  
-            - Pre-filled markup points  
-        - Allows continuing previous work
+        2. **Project archive (ZIP)**
+        - Must contain one PNG image (unmarked) 
+        - And one JSON file with point data
                     
         """)
 
